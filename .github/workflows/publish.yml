@@ -67,7 +67,7 @@ jobs:
         env:
           RELEASE_FILE: ${{ needs.release.outputs.filename }}
           RELEASE_TAG: ${{ needs.release.outputs.tag }}
-        run: npm publish "release/$RELEASE_FILE" --access public --provenance --tag "$RELEASE_TAG"
+        run: npm publish "./release/$RELEASE_FILE" --access public --provenance --tag "$RELEASE_TAG"
       - name: Verify the published archive
         env:
           RELEASE_FILE: ${{ needs.release.outputs.filename }}

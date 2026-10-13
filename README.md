@@ -315,7 +315,7 @@ npm pack
 The wasm-bindgen CLI version must match `Cargo.lock`. Dependencies and upstream
 commits are locked. `npm pack` verifies artifacts and renders a PDF before making
 the tarball; it does not publish. Install locally using
-`npm install ./blitz-pdf-0.1.0.tgz`.
+`npm install ./blitz-pdf-<version>.tgz`.
 
 The pinned Stylo source in `vendor/stylo` enables paged-media properties in the
 Servo build; `vendor/README.md` records the small patch. Its MPL-2.0 source is
@@ -353,9 +353,10 @@ For the next patch release:
 
 ```sh
 git add package.json package-lock.json Cargo.toml Cargo.lock
-git commit -m "chore: release 0.1.1"
-git tag v0.1.1
-git push origin main v0.1.1
+RELEASE_VERSION=$(node -p "require('./package.json').version")
+git commit -m "chore: release $RELEASE_VERSION"
+git tag "v$RELEASE_VERSION"
+git push origin main "v$RELEASE_VERSION"
 ```
 
 To retry a failed release, rerun its GitHub Actions run or use

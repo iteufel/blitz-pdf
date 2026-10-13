@@ -7,7 +7,8 @@ import { inspect } from "./helpers";
 describe("real vector PDFs through the public package export", () => {
   test("initializes once for concurrent callers", async () => {
     await Promise.all([init(), init(), init()]);
-    expect(await getEngineVersion()).toMatch(/^blitz-pdf\/0\.1\.0 blitz\//);
+    const { version } = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+    expect(await getEngineVersion()).toStartWith(`blitz-pdf/${version} blitz/`);
   });
 
   test("embeds selectable Unicode text and fonts with no raster page", async () => {
