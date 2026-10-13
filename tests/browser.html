@@ -1,0 +1,60 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>blitz-pdf browser verification</title>
+<style>body{font:16px system-ui;max-width:760px;margin:48px auto;padding:0 24px;color:#172033}button,a{font:inherit;padding:10px 18px}pre{white-space:pre-wrap;background:#f0f4f8;padding:20px;border-radius:8px}iframe{width:100%;height:620px;border:1px solid #ddd;margin-top:24px}</style>
+<h1>blitz-pdf browser verification</h1>
+<p>This page renders HTML using the packaged WASM module and opens the resulting vector PDF.</p>
+<pre id="status">Running…</pre>
+<a id="download" hidden download="blitz-pdf-browser.pdf">Download PDF</a>
+<iframe id="pdf" title="Generated PDF" hidden></iframe>
+<script type="module">
+  import { init, renderPdf, getEngineVersion } from "../dist/browser.js";
+  import { getDocument, GlobalWorkerOptions } from "../node_modules/pdfjs-dist/build/pdf.mjs";
+  GlobalWorkerOptions.workerSrc = "../node_modules/pdfjs-dist/build/pdf.worker.mjs";
+  const status = document.querySelector("#status");
+  try {
+    await Promise.all([init(), init()]);
+    const requests = [];
+    const bytes = await renderPdf(`<link rel="stylesheet" href="main.css"><h1>Blitz PDF in the browser</h1><div class="box">Selectable text: café, office, affinity.<p><b>Bold</b> and <i>italic</i> stay as text.</p></div><p class="hidden">Must be hidden</p><p class="second">Second page from CSS</p>`, {
+      width: "160mm", height: "100mm", title: "Browser verification",
+      pageNumbers: { template: "Seite {page} von {pages}", fontSize: "8pt" },
+      baseUrl: new URL("/tests/fixtures/dynamic/", location.href).href,
+      assets: async url => {
+        requests.push(url);
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`HTTP ${response.status} loading ${url}`);
+        return response.arrayBuffer();
+      },
+    });
+    if (requests.length !== 3 || new Set(requests).size !== 3 || !requests.some(url => url.endsWith("DejaVuSansMono.ttf"))) throw new Error("Dynamic CSS/font requests failed");
+    if (new TextDecoder().decode(bytes.subarray(0,5)) !== "%PDF-") throw new Error("Invalid PDF header");
+    const task = getDocument({data:bytes.slice()});
+    const parsed = await task.promise;
+    if (parsed.numPages !== 2) throw new Error("Browser CSS page break failed");
+    const {metadata} = await parsed.getMetadata();
+    if (metadata.get("pdfaid:part") !== "3" || metadata.get("pdfaid:conformance") !== "U") throw new Error("Missing browser PDF/A-3u metadata");
+    const text = (await (await parsed.getPage(1)).getTextContent()).items.map(item=>item.str ?? "").join(" ").replace(/\s+/g, " ").trim();
+    if (!text.includes("Selectable text: café, office, affinity.")) throw new Error("Browser PDF text extraction failed: " + text);
+    if (text.includes("Must be hidden")) throw new Error("Imported CSS was not applied");
+    const second = (await (await parsed.getPage(2)).getTextContent()).items.map(item=>item.str ?? "").join(" ").replace(/\s+/g, " ").trim();
+    if (!second.includes("Second page from CSS") || text.includes("Second page from CSS")) throw new Error("Text on wrong page");
+    if (!text.includes("Seite 1 von 2") || !second.includes("Seite 2 von 2")) throw new Error("Browser page numbering failed");
+    await task.destroy();
+    const workerResult = await new Promise((resolve, reject) => {
+      const worker = new Worker("/tests/browser-worker.mjs", {type:"module"});
+      worker.onmessage = ({data}) => { worker.terminate(); data.ok ? resolve(data) : reject(new Error(data.error)); };
+      worker.onerror = error => { worker.terminate(); reject(error); };
+      worker.postMessage("render");
+    });
+    const url = URL.createObjectURL(new Blob([bytes], {type:"application/pdf"}));
+    const link = document.querySelector("#download"); link.href = url; link.hidden = false;
+    const frame = document.querySelector("#pdf"); frame.src = url; frame.hidden = false;
+    globalThis.testResult = { ok: true, profile:"PDF/A-3u", pages:2, bytes: bytes.length, engine: await getEngineVersion(), text, assets:requests, worker:workerResult };
+    globalThis.pdfBytes = bytes;
+    status.textContent = JSON.stringify(globalThis.testResult, null, 2);
+  } catch (error) {
+    globalThis.testResult = { ok: false, error: String(error), stack: error.stack };
+    status.textContent = JSON.stringify(globalThis.testResult, null, 2);
+  }
+</script>

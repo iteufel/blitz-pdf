@@ -1,0 +1,17 @@
+import { access, readFile } from "node:fs/promises";
+
+for (const name of ["dist/node.js", "dist/browser.js", "dist/node.d.ts", "dist/browser.d.ts", "wasm/blitz_pdf.js", "wasm/blitz_pdf_bg.wasm", "LICENSE", "THIRD_PARTY_NOTICES.md"]) {
+  try { await access(new URL(`../${name}`, import.meta.url)); }
+  catch { throw new Error(`Package is incomplete: missing ${name}. Run npm run build first.`); }
+}
+const wasm = await readFile(new URL("../wasm/blitz_pdf_bg.wasm", import.meta.url));
+if (!WebAssembly.validate(wasm)) throw new Error("The packaged WASM binary is invalid");
+const { renderPdf } = await import("../dist/node.js");
+const pdf = await renderPdf("<p>Package verification</p>");
+if (new TextDecoder().decode(pdf.subarray(0, 5)) !== "%PDF-") throw new Error("Package smoke test did not produce a PDF");
+const requests = [];
+const dynamic = await renderPdf('<link rel="stylesheet" href="test.css"><p>Dynamic asset verification</p>', {
+  assets: async url => { requests.push(url); return "p{color:blue}"; },
+});
+if (new TextDecoder().decode(dynamic.subarray(0, 5)) !== "%PDF-" || requests.length !== 1) throw new Error("Package async asset smoke test failed");
+console.log("Package artifacts, rendering, and async assets verified.");

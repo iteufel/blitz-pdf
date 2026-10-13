@@ -1,0 +1,42 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: 1.99.0
+          targets: wasm32-unknown-unknown
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
+      - run: npm ci
+      - run: cargo fmt --check
+      - run: cargo clippy --locked --target wasm32-unknown-unknown -- -D warnings
+      - run: npm run build
+      - run: npm run setup:verapdf
+      - run: npm run test:pdfa
+      - run: npm run test:node
+      - run: bun run bench --iterations=10 --warmup=2 --json > benchmark-results.json
+      - run: npm pack
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: package-and-benchmarks
+          path: |
+            blitz-pdf-*.tgz
+            benchmark-results.json
+            output/pdfa-validation/

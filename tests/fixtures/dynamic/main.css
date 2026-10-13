@@ -1,0 +1,8 @@
+@import "nested.css";
+@font-face {
+  font-family: LoadedMono;
+  src: url("../../../assets/fonts/DejaVuSansMono.ttf");
+}
+body { font-family: sans-serif; padding: 24px; }
+h1 { color: #2563eb; }
+.box { font-family: LoadedMono; font-size: 14px; border: 2px solid #2563eb; border-radius: 12px; padding: 16px; background: #eff6ff; }

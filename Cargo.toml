@@ -1,0 +1,43 @@
+[package]
+name = "blitz-pdf-wasm"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.92"
+license = "MIT"
+publish = false
+
+[lib]
+path = "crates/blitz-pdf/src/lib.rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+blitz-dom = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false, features = ["svg", "woff"] }
+blitz-html = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false }
+blitz-paint = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false, features = ["svg"] }
+blitz-traits = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false }
+anyrender = "0.14"
+data-url = "0.3"
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
+krilla = { version = "0.8.2", default-features = false, features = ["raster-images"] }
+kurbo = "0.13.1"
+peniko = "0.6"
+skrifa = "0.44"
+parley = { version = "0.12", default-features = false, features = ["std"] }
+serde = { version = "1", features = ["derive"] }
+serde_bytes = "0.11"
+serde-wasm-bindgen = "0.6"
+wasm-bindgen = "=0.2.129"
+js-sys = "0.3.106"
+style = { package = "stylo", version = "0.22.0" }
+
+[patch.crates-io]
+# Enable paged-media properties in Stylo's Servo build, preserving the CSS cascade.
+stylo = { path = "vendor/stylo" }
+
+[profile.release]
+opt-level = "s"
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = true
+

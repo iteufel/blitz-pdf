@@ -1,0 +1,59 @@
+* { box-sizing: border-box; }
+body { margin: 0; color: #172d3b; font: 11px/1.45 sans-serif; }
+.masthead, .brand, .address-row, .title-row, .invoice-meta, .section-heading, .carry, .settlement, .bank, .continuation-header { display: flex; }
+.masthead { justify-content: space-between; align-items: center; border-bottom: 2px solid #167d8d; padding-bottom: 15px; }
+.brand { align-items: center; gap: 12px; }
+.brand-mark { display: block; color: white; background: #167d8d; border-radius: 8px; font-size: 27px; font-weight: bold; line-height: 42px; text-align: center; width: 42px; height: 42px; }
+.brand strong { font-size: 21px; letter-spacing: 1px; }
+.brand small { display: block; color: #637480; font-size: 10px; }
+.contact { color: #637480; text-align: right; }
+.sample-note { margin-top: 10px; color: #637480; font-size: 9px; letter-spacing: .3px; }
+.address-row { justify-content: space-between; margin: 22px 0 20px; }
+.sender-line { margin: 0 0 12px; font-size: 8px; color: #637480; }
+address { font-style: normal; font-size: 12px; line-height: 1.55; }
+.supplier-address { font-size: 10px; line-height: 1.65; }
+.title-row { align-items: baseline; justify-content: space-between; }
+h1 { margin: 0; font-size: 31px; line-height: 1.2; }
+.title-row > span { font-weight: bold; font-size: 16px; }
+.invoice-meta { margin-top: 15px; padding: 12px 14px; background: #edf5f5; justify-content: space-between; }
+.invoice-meta span, .bank span { display: block; font-size: 9px; color: #637480; margin-bottom: 3px; }
+.project { margin: 16px 0 18px; line-height: 1.65; }
+.project > strong { font-size: 12px; }
+.continuation { break-before: page; }
+.continuation-header { justify-content: space-between; align-items: center; border-bottom: 2px solid #167d8d; padding-bottom: 16px; margin-bottom: 24px; }
+.continuation-header > strong { font-size: 18px; }
+.continuation-header > strong > span { font-size: 11px; font-weight: normal; }
+.continuation-header > div { text-align: right; font-size: 10px; }
+.section-heading { align-items: center; gap: 12px; margin: 0 0 12px; break-after: avoid; }
+.section-index { color: #167d8d; font-size: 26px; line-height: 1; font-weight: bold; }
+h2 { font-size: 14px; line-height: 1.3; margin: 0 0 3px; }
+.section-heading p { margin: 0; font-size: 10px; color: #637480; }
+table { width: 100%; border-collapse: collapse; }
+.col-position { width: 6%; } .col-description { width: 49%; } .col-quantity { width: 10%; } .col-unit { width: 16%; } .col-total { width: 19%; }
+th { padding: 8px 6px; border-bottom: 1px solid #aac6cc; background: #edf5f5; color: #43616e; font-size: 9px; font-weight: bold; text-align: left; }
+.items td { vertical-align: top; padding: 9px 6px; border-bottom: 1px solid #dce6e8; }
+.items tbody tr { break-inside: avoid; }
+.items td strong { font-size: 10px; font-weight: bold; }
+.description { margin-top: 3px; font-size: 9px; color: #637480; line-height: 1.45; }
+.position { font-size: 10px; color: #637480; }
+.numeric { text-align: right; white-space: nowrap; font-size: 10px; }
+.amount { font-weight: bold; }
+.carry { justify-content: space-between; padding: 9px 6px; font-size: 10px; border-top: 1px solid #dce6e8; }
+.after-table { border-top: 0; background: #f4f7f8; }
+.continuation-note { font-size: 9px; color: #637480; margin: 13px 0 22px; }
+.company-details { border-top: 1px solid #dce6e8; padding-top: 10px; color: #637480; font-size: 8px; line-height: 1.65; break-inside: avoid; }
+.settlement { gap: 28px; margin-top: 20px; align-items: flex-start; break-inside: avoid; }
+.tax-note { flex: 1; color: #637480; font-size: 9px; }
+.tax-note > strong { color: #172d3b; font-size: 11px; }
+.tax-note p { margin: 8px 0 0; }
+.totals { width: 62%; font-size: 11px; }
+.totals td { padding: 5px 0; }
+.totals td:last-child { text-align: right; white-space: nowrap; font-weight: bold; }
+.totals .net td { border-top: 1px solid #dce6e8; padding-top: 9px; }
+.totals .grand-total td { padding: 12px 0; font-size: 16px; color: #126a78; border-top: 2px solid #167d8d; }
+.payment { background: #edf5f5; padding: 14px 16px; margin-top: 18px; break-inside: avoid; }
+h3 { font-size: 11px; margin: 0; }
+.payment p { margin: 7px 0 12px; font-size: 10px; line-height: 1.6; }
+.bank { justify-content: space-between; gap: 10px; font-size: 9px; }
+.closing { margin: 18px 0; font-size: 10px; }
+p { widows: 2; orphans: 2; }

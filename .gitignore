@@ -1,0 +1,13 @@
+node_modules/
+dist/
+wasm/
+target/
+.cache/
+tmp/
+output/
+*.tgz
+benchmark-results.json
+.DS_Store
+__pycache__/
+*.pyc
+

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<style>
+  body { margin: 0; font-family: sans-serif; color: #172033; font-size: 14px; line-height: 1.5; }
+  header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #2457db; padding-bottom: 20px; }
+  h1 { color: #2457db; margin: 0; font-size: 36px; }
+  .meta { color: #56647a; text-align: right; }
+  .customer { margin: 28px 0; }
+  table { width: 100%; border-collapse: collapse; }
+  th { background: #edf2fc; text-align: left; }
+  th, td { padding: 12px; border-bottom: 1px solid #dde3ed; }
+  .number { text-align: right; }
+  .total { margin-top: 20px; text-align: right; font-size: 20px; }
+  footer { margin-top: 50px; padding-top: 18px; border-top: 1px solid #dde3ed; color: #56647a; }
+</style>
+<header><h1>INVOICE</h1><div class="meta">BLITZ STUDIO<br>INV-0042 · 13 October 2026</div></header>
+<section class="customer"><b>Prepared for</b><br>Example Company<br>Berlin, Germany</section>
+<table>
+  <thead><tr><th>Description</th><th class="number">Hours</th><th class="number">Rate</th><th class="number">Amount</th></tr></thead>
+  <tbody>
+    <tr><td>Design and typography</td><td class="number">8</td><td class="number">€125.00</td><td class="number">€1,000.00</td></tr>
+    <tr><td>HTML and CSS implementation</td><td class="number">12</td><td class="number">€125.00</td><td class="number">€1,500.00</td></tr>
+    <tr><td>PDF integration and testing</td><td class="number">6</td><td class="number">€125.00</td><td class="number">€750.00</td></tr>
+  </tbody>
+</table>
+<p class="total"><b>Total: €3,250.00</b></p>
+<footer>Generated from HTML with Blitz and WebAssembly.<br>Text stays selectable. Fonts are embedded. Shapes are vectors.</footer>
+</html>

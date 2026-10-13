@@ -1,0 +1,83 @@
+{
+  "name": "blitz-pdf",
+  "version": "0.1.0",
+  "description": "Render HTML and CSS to PDF with Blitz and WebAssembly in Node.js, Bun, and browsers.",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "sideEffects": false,
+  "main": "./dist/node.js",
+  "module": "./dist/browser.js",
+  "types": "./dist/node.d.ts",
+  "exports": {
+    ".": {
+      "browser": {
+        "types": "./dist/browser.d.ts",
+        "default": "./dist/browser.js"
+      },
+      "bun": {
+        "types": "./dist/node.d.ts",
+        "default": "./dist/node.js"
+      },
+      "node": {
+        "types": "./dist/node.d.ts",
+        "default": "./dist/node.js"
+      },
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "default": "./dist/browser.js"
+    },
+    "./wasm": "./wasm/blitz_pdf_bg.wasm",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "wasm",
+    "src",
+    "examples",
+    "assets/icon.svg",
+    "README.md",
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md",
+    "licenses",
+    "vendor"
+  ],
+  "scripts": {
+    "build": "npm run build:wasm && npm run build:js",
+    "build:wasm": "node scripts/build-wasm.mjs",
+    "build:js": "tsc -p tsconfig.json",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "test": "bun test tests/*.test.ts",
+    "test:node": "node tests/node-smoke.mjs",
+    "test:bun": "bun test tests/*.test.ts",
+    "test:browser": "node scripts/serve-browser.mjs",
+    "test:pdfa": "node scripts/validate-pdfa.mjs",
+    "setup:verapdf": "node scripts/install-verapdf.mjs",
+    "bench": "bun benchmarks/render.ts",
+    "prepack": "node scripts/check-package.mjs",
+    "example:node": "node examples/node.mjs",
+    "example:bun": "bun examples/bun.ts",
+    "example:pagination": "node examples/pagination.mjs",
+    "example:german-invoice": "node examples/german-invoice.mjs"
+  },
+  "keywords": [
+    "pdf",
+    "html",
+    "css",
+    "wasm",
+    "webassembly",
+    "blitz",
+    "bun"
+  ],
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
+    "typescript": "^5.9.3"
+  }
+}
