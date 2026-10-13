@@ -389,6 +389,7 @@ pub fn render(
     index: &TextIndex,
     ranges: &[crate::pagination::PageRange],
     options: &crate::Options,
+    templates: &[Vec<crate::templates::PaintedTemplate>],
 ) -> Result<Vec<u8>, String> {
     let (width, height) = (options.width, options.height);
     let margin = &options.margin;
@@ -416,141 +417,57 @@ pub fn render(
                 .ok_or("Invalid PDF page size")?,
         );
         let mut surface = page.surface();
-        let result = if range.blank {
+        let result = (|| -> Result<(), String> {
+            if range.blank {
+                return Ok(());
+            }
+            for fragment in range.repeats.iter().filter(|f| f.y < range.offset) {
+                let mut fragment = *fragment;
+                fragment.x += margin.left;
+                fragment.y += margin.top;
+                draw_fragment(&mut surface, &mut cache, scene, index, fragment)?;
+            }
+            draw_fragment(
+                &mut surface,
+                &mut cache,
+                scene,
+                index,
+                Fragment {
+                    left: 0.0,
+                    top,
+                    right: content_width,
+                    bottom,
+                    x: margin.left,
+                    y: margin.top + range.offset,
+                },
+            )?;
+            for fragment in range.repeats.iter().filter(|f| f.y >= range.offset) {
+                let mut fragment = *fragment;
+                fragment.x += margin.left;
+                fragment.y += margin.top;
+                draw_fragment(&mut surface, &mut cache, scene, index, fragment)?;
+            }
             Ok(())
-        } else {
-            surface.push_transform(&transform(
-                Affine::scale(0.75) * Affine::translate((margin.left, margin.top)),
-            ));
-            surface.push_clip_path(
-                &path(&Rect::new(0.0, 0.0, content_width, bottom - top).to_path(0.01)).unwrap(),
-                &FillRule::NonZero,
-            );
-            surface.push_transform(&transform(Affine::translate((0.0, -top))));
-            let mut layers = Vec::new();
-            let result = (|| -> Result<(), String> {
-                for command in &scene.commands {
-                    match command {
-                        RenderCommand::PushLayer(c) => {
-                            if c.filter.is_some() || c.backdrop_filter.is_some() {
-                                return Err(
-                                    "CSS filters are not supported by the vector PDF backend"
-                                        .into(),
-                                );
-                            }
-                            if c.blend.compose != peniko::Compose::SrcOver {
-                                return Err(
-                                    "Unsupported Porter-Duff compositing in vector PDF output"
-                                        .into(),
-                                );
-                            }
-                            let clip =
-                                path(&(c.transform * &c.clip)).ok_or("Invalid layer clip")?;
-                            surface.push_clip_path(&clip, &rule(c.fill));
-                            surface.push_opacity(norm(c.alpha));
-                            surface.push_blend_mode(blend(c.blend.mix)?);
-                            layers.push(3);
-                        }
-                        RenderCommand::PushClipLayer(c) => {
-                            let clip = path(&(c.transform * &c.clip)).ok_or("Invalid clip path")?;
-                            surface.push_clip_path(&clip, &rule(c.fill));
-                            layers.push(1);
-                        }
-                        RenderCommand::PopLayer => {
-                            for _ in 0..layers.pop().ok_or("Unbalanced paint layers")? {
-                                surface.pop();
-                            }
-                        }
-                        RenderCommand::Fill(c)
-                            if intersects_page(&c.shape, c.transform, top, bottom) =>
-                        {
-                            draw_fill(
-                                &mut surface,
-                                &mut cache,
-                                &c.shape,
-                                c.fill,
-                                c.transform,
-                                &c.brush,
-                                c.brush_transform,
-                            )?
-                        }
-                        RenderCommand::Fill(_) => {}
-                        RenderCommand::Stroke(c) => {
-                            let outline = kurbo::stroke(
-                                c.shape.elements().iter().copied(),
-                                &c.style,
-                                &Default::default(),
-                                0.01,
-                            );
-                            if !intersects_page(&outline, c.transform, top, bottom) {
-                                continue;
-                            }
-                            draw_fill(
-                                &mut surface,
-                                &mut cache,
-                                &outline,
-                                peniko::Fill::NonZero,
-                                c.transform,
-                                &c.brush,
-                                c.brush_transform,
-                            )?;
-                        }
-                        RenderCommand::GlyphRun(c) => {
-                            if let Some(g) = c.glyphs.first() {
-                                let y = text_bounds(c).map(|r| r.y0).unwrap_or_else(|| {
-                                    (c.transform
-                                        * kurbo::Point::new(f64::from(g.x), f64::from(g.y)))
-                                    .y
-                                });
-                                // Embed only text belonging to this page, preserving
-                                // extraction order without duplicate clipped text.
-                                if y >= top - 0.01 && y < bottom - 0.01 {
-                                    draw_text(&mut surface, &mut cache, index, c)?;
-                                }
-                            }
-                        }
-                        RenderCommand::BoxShadow(c) => {
-                            if c.std_dev > 0.0 {
-                                return Err(
-                                "Blurred box shadows are not supported by the vector PDF backend"
-                                    .into(),
-                            );
-                            }
-                            let shape = c.rect.to_rounded_rect(c.radius).to_path(0.01);
-                            if !intersects_page(&shape, c.transform, top, bottom) {
-                                continue;
-                            }
-                            draw_fill(
-                                &mut surface,
-                                &mut cache,
-                                &shape,
-                                peniko::Fill::NonZero,
-                                c.transform,
-                                &Paint::Solid(c.brush),
-                                None,
-                            )?;
-                        }
-                    }
-                }
-                if !layers.is_empty() {
-                    return Err("Unbalanced paint layers".into());
-                }
-                Ok(())
-            })();
-            // Krilla checks balanced stacks when a surface is dropped. Even rejected
-            // commands must unwind cleanly so a user error cannot poison the WASM
-            // instance and break subsequent renders.
-            for count in layers.into_iter().rev() {
-                for _ in 0..count {
-                    surface.pop();
+        })();
+        let result = result.and_then(|()| {
+            if let Some(templates) = templates.get(page_index) {
+                for template in templates {
+                    draw_fragment(
+                        &mut surface,
+                        &mut cache,
+                        &template.scene,
+                        &template.index,
+                        Fragment {
+                            left: 0.0,
+                            top: 0.0,
+                            right: content_width,
+                            bottom: template.height,
+                            x: margin.left,
+                            y: template.y,
+                        },
+                    )?;
                 }
             }
-            surface.pop();
-            surface.pop();
-            surface.pop();
-            result
-        };
-        let result = result.and_then(|()| {
             if let Some(numbering) = &mut numbering {
                 numbering.draw(page_index + 1, ranges.len(), &mut surface, &mut cache)?;
             }
@@ -562,4 +479,156 @@ pub fn render(
     }
     pdf.finish()
         .map_err(|e| format!("PDF/A-3u export failed: {e:?}"))
+}
+
+#[derive(Clone, Copy, Debug)]
+pub struct Fragment {
+    pub left: f64,
+    pub top: f64,
+    pub right: f64,
+    pub bottom: f64,
+    pub x: f64,
+    pub y: f64,
+}
+
+fn draw_fragment(
+    surface: &mut Surface<'_>,
+    cache: &mut Cache,
+    scene: &Scene,
+    index: &TextIndex,
+    fragment: Fragment,
+) -> Result<(), String> {
+    let Fragment {
+        left,
+        top,
+        right,
+        bottom,
+        x,
+        y,
+    } = fragment;
+    surface.push_transform(&transform(Affine::scale(0.75) * Affine::translate((x, y))));
+    surface.push_clip_path(
+        &path(&Rect::new(0.0, 0.0, right - left, bottom - top).to_path(0.01)).unwrap(),
+        &FillRule::NonZero,
+    );
+    surface.push_transform(&transform(Affine::translate((-left, -top))));
+    let mut layers = Vec::new();
+    let result = (|| -> Result<(), String> {
+        for command in &scene.commands {
+            match command {
+                RenderCommand::PushLayer(c) => {
+                    if c.filter.is_some() || c.backdrop_filter.is_some() {
+                        return Err(
+                            "CSS filters are not supported by the vector PDF backend".into()
+                        );
+                    }
+                    if c.blend.compose != peniko::Compose::SrcOver {
+                        return Err(
+                            "Unsupported Porter-Duff compositing in vector PDF output".into()
+                        );
+                    }
+                    let clip = path(&(c.transform * &c.clip)).ok_or("Invalid layer clip")?;
+                    surface.push_clip_path(&clip, &rule(c.fill));
+                    surface.push_opacity(norm(c.alpha));
+                    surface.push_blend_mode(blend(c.blend.mix)?);
+                    layers.push(3);
+                }
+                RenderCommand::PushClipLayer(c) => {
+                    let clip = path(&(c.transform * &c.clip)).ok_or("Invalid clip path")?;
+                    surface.push_clip_path(&clip, &rule(c.fill));
+                    layers.push(1);
+                }
+                RenderCommand::PopLayer => {
+                    for _ in 0..layers.pop().ok_or("Unbalanced paint layers")? {
+                        surface.pop();
+                    }
+                }
+                RenderCommand::Fill(c) if intersects_page(&c.shape, c.transform, top, bottom) => {
+                    draw_fill(
+                        surface,
+                        cache,
+                        &c.shape,
+                        c.fill,
+                        c.transform,
+                        &c.brush,
+                        c.brush_transform,
+                    )?
+                }
+                RenderCommand::Fill(_) => {}
+                RenderCommand::Stroke(c) => {
+                    let outline = kurbo::stroke(
+                        c.shape.elements().iter().copied(),
+                        &c.style,
+                        &Default::default(),
+                        0.01,
+                    );
+                    if !intersects_page(&outline, c.transform, top, bottom) {
+                        continue;
+                    }
+                    draw_fill(
+                        surface,
+                        cache,
+                        &outline,
+                        peniko::Fill::NonZero,
+                        c.transform,
+                        &c.brush,
+                        c.brush_transform,
+                    )?;
+                }
+                RenderCommand::GlyphRun(c) => {
+                    if let Some(g) = c.glyphs.first() {
+                        let y = text_bounds(c).map(|r| r.y0).unwrap_or_else(|| {
+                            (c.transform * kurbo::Point::new(f64::from(g.x), f64::from(g.y))).y
+                        });
+                        // Embed only text belonging to this page, preserving
+                        // extraction order without duplicate clipped text.
+                        if y >= top - 0.01
+                            && y < bottom - 0.01
+                            && text_bounds(c).is_none_or(|r| r.x1 > left && r.x0 < right)
+                        {
+                            draw_text(surface, cache, index, c)?;
+                        }
+                    }
+                }
+                RenderCommand::BoxShadow(c) => {
+                    if c.std_dev > 0.0 {
+                        return Err(
+                            "Blurred box shadows are not supported by the vector PDF backend"
+                                .into(),
+                        );
+                    }
+                    let shape = c.rect.to_rounded_rect(c.radius).to_path(0.01);
+                    if !intersects_page(&shape, c.transform, top, bottom) {
+                        continue;
+                    }
+                    draw_fill(
+                        surface,
+                        cache,
+                        &shape,
+                        peniko::Fill::NonZero,
+                        c.transform,
+                        &Paint::Solid(c.brush),
+                        None,
+                    )?;
+                }
+            }
+        }
+        if !layers.is_empty() {
+            return Err("Unbalanced paint layers".into());
+        }
+        Ok(())
+    })();
+    // Krilla checks balanced stacks when a surface is dropped. Even rejected
+    // commands must unwind cleanly so a user error cannot poison the WASM
+    // instance and break subsequent renders.
+    for count in layers.into_iter().rev() {
+        for _ in 0..count {
+            surface.pop();
+        }
+    }
+
+    surface.pop();
+    surface.pop();
+    surface.pop();
+    result
 }

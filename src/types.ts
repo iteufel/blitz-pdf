@@ -1,6 +1,6 @@
 /** Numbers are CSS pixels (96 px = 1 inch). */
 export type Length = number | `${number}${"px" | "pt" | "mm" | "cm" | "in"}`;
-export type PageFormat = "A3" | "A4" | "A5" | "Letter" | "Legal" | "Tabloid";
+export type PageFormat = "A0" | "A1" | "A2" | "A3" | "A4" | "A5" | "A6" | "Letter" | "Legal" | "Tabloid" | "Ledger";
 export type BinaryData = Uint8Array | ArrayBuffer;
 /** UTF-8 text (for CSS/SVG) or binary resource contents. */
 export type AssetData = BinaryData | string;
@@ -91,6 +91,9 @@ export interface PdfOptions {
   // All output uses PDF/A-3u conformance, including Unicode mappings and ICC colors.
   /** Default: A4. Use width and height together for a custom page. */
   format?: PageFormat;
+  /** Let CSS @page size override explicit format/width/height. Default: false.
+   * Without explicit dimensions, CSS page size is always used when available. */
+  preferCSSPageSize?: boolean;
   width?: Length;
   height?: Length;
   landscape?: boolean;
@@ -112,6 +115,10 @@ export interface PdfOptions {
   attachments?: readonly PdfAttachment[];
   /** Selectable page-number footer. Reserves space above the bottom margin. Default: false. */
   pageNumbers?: boolean | PageNumberOptions;
+  /** HTML rendered on every page inside the top margin. Styles are template-local. */
+  headerTemplate?: string;
+  /** HTML rendered on every page inside the bottom margin. Styles are template-local. */
+  footerTemplate?: string;
   /** Reject larger documents. Default: 100; maximum: 1000. */
   maxPages?: number;
 }

@@ -287,7 +287,7 @@ impl AtRuleType {
             "keyframes" => Self::Keyframes(None),
             "-webkit-keyframes" => Self::Keyframes(Some(VendorPrefix::WebKit)),
             "-moz-keyframes" if cfg!(feature = "gecko") => Self::Keyframes(Some(VendorPrefix::Moz)),
-            "page" if cfg!(feature = "gecko") => Self::Page,
+            "page" => Self::Page,
             "property" if crate::pref!("layout.css.properties-and-values.enabled") => Self::Property,
             "-moz-document" if cfg!(feature = "gecko") => Self::Document,
             "import" => Self::Import,

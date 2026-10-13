@@ -16,6 +16,7 @@ blitz-html = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e6794
 blitz-paint = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false, features = ["svg"] }
 blitz-traits = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false }
 anyrender = "0.14"
+cssparser = "0.38"
 data-url = "0.3"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
 krilla = { version = "0.8.2", default-features = false, features = ["raster-images"] }
@@ -29,6 +30,7 @@ serde-wasm-bindgen = "0.6"
 wasm-bindgen = "=0.2.129"
 js-sys = "0.3.106"
 style = { package = "stylo", version = "0.22.0" }
+style_traits = { package = "stylo_traits", version = "0.22.0" }
 
 [patch.crates-io]
 # Enable paged-media properties in Stylo's Servo build, preserving the CSS cascade.

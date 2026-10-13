@@ -3,10 +3,12 @@
 `stylo/` is the unmodified crates.io `stylo` 0.22.0 source except for:
 
 - `properties/longhands.toml`: enable `break-before`, `break-after`, and
-  `break-inside` for Servo; add inherited positive-integer `widows` and `orphans`.
+  `break-inside` and the `@page size` descriptor for Servo; add inherited
+  positive-integer `widows` and `orphans`.
 - `properties/shorthands.toml`: enable the three legacy `page-break-*` aliases.
 - `properties/counted_unknown_properties.py`: stop classifying widows/orphans as unknown.
 - `values/specified/box.rs`: parse `avoid-page`, `recto`, and `verso` break values.
+- `stylesheets/rule_parser.rs`: enable Stylo's existing `@page` parser in Servo.
 
 Upstream exposes break properties only in Gecko builds. Enabling them here lets
 Blitz's actual Stylo cascade handle selectors, inheritance, media queries, CSS
@@ -14,7 +16,7 @@ variables, inline styles, and `!important`; no CSS rewriting is used.
 
 This directory retains its upstream MPL-2.0 license. The modified source ships in
 the npm archive. Update the patch when upgrading Stylo and run the pagination
-suite, especially the cascade and legacy-alias tests.
+suite and `tests/reports.test.ts`, especially cascade, page geometry and legacy aliases.
 
 # Krilla document metadata patch
 

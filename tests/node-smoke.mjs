@@ -13,8 +13,10 @@ assert.deepEqual(pdf.getPage(0).getSize(), { width: 612, height: 792 });
 assert.match(await getEngineVersion(), /blitz-pdf/);
 await assert.rejects(renderPdf("", { maxPages: 0 }), /maxPages/);
 const requests = [];
-const dynamicBytes = await renderPdf('<link rel="stylesheet" href="main.css"><p class="box">Loaded font</p><p class="second">Second page</p>', {
+const dynamicBytes = await renderPdf('<style>@page{size:105mm 148mm;margin:8mm}</style><link rel="stylesheet" href="main.css"><p class="box">Loaded font</p><p class="second">Second page</p>', {
   baseUrl: new URL("fixtures/dynamic/", import.meta.url).href,
+  headerTemplate: '<div style="font:10px/14px sans-serif">Node report <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
+  footerTemplate: '<div style="font:10px/14px sans-serif">Node footer</div>',
   pageNumbers: { template: "Seite {page} von {pages}" },
   metadata: { author: "Node app", language: "de-DE", xmp: [{
     name: "Test metadata", prefix: "test", namespaceUri: "urn:example:test:1.0#",
@@ -25,6 +27,7 @@ const dynamicBytes = await renderPdf('<link rel="stylesheet" href="main.css"><p 
 });
 const dynamic = await PDFDocument.load(dynamicBytes);
 assert.equal(dynamic.getPageCount(), 2);
+assert(Math.abs(dynamic.getPage(0).getSize().width - 105*72/25.4) < 0.001);
 assert.equal(requests.length, 3);
 assert.equal(new Set(requests).size, 3);
 assert(requests.some(url => url.endsWith("DejaVuSansMono.ttf")));
@@ -34,4 +37,4 @@ assert.equal(af.size(), 2);
 const embedded = af.lookup(0, PDFDict).lookup(PDFName.of("EF"), PDFDict).lookup(PDFName.of("F"), PDFRawStream);
 assert.deepEqual(decodePDFRawStream(embedded).decode(), new Uint8Array([0, 128, 255]));
 assert.match(new TextDecoder().decode(dynamic.catalog.lookup(PDFName.of("Metadata"), PDFRawStream).contents), /<test:Runtime>Node<\/test:Runtime>/);
-console.log(`Node ${process.version}: rendering, async assets, metadata, attachments and custom XMP passed (${bytes.length} / ${dynamicBytes.length} bytes).`);
+console.log(`Node ${process.version}: rendering, async assets, metadata, attachments, custom XMP, CSS pages and margin templates passed (${bytes.length} / ${dynamicBytes.length} bytes).`);

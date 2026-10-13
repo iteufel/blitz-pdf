@@ -182,6 +182,7 @@ dependencies = [
  "blitz-html",
  "blitz-paint",
  "blitz-traits",
+ "cssparser",
  "data-url",
  "image",
  "js-sys",
@@ -194,6 +195,7 @@ dependencies = [
  "serde_bytes",
  "skrifa 0.44.0",
  "stylo",
+ "stylo_traits",
  "wasm-bindgen",
 ]
 

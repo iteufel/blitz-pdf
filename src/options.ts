@@ -4,12 +4,16 @@ import { record } from "./validation.js";
 import type { Length, PageFormat, PageNumberOptions, PdfOptions } from "./types.js";
 
 const formats: Record<PageFormat, readonly [number, number]> = {
+  A0: [841 * 96 / 25.4, 1189 * 96 / 25.4],
+  A1: [594 * 96 / 25.4, 841 * 96 / 25.4],
+  A2: [420 * 96 / 25.4, 594 * 96 / 25.4],
   A3: [297 * 96 / 25.4, 420 * 96 / 25.4],
   A4: [210 * 96 / 25.4, 297 * 96 / 25.4],
   A5: [148 * 96 / 25.4, 210 * 96 / 25.4],
-  Letter: [8.5 * 96, 11 * 96], Legal: [8.5 * 96, 14 * 96], Tabloid: [11 * 96, 17 * 96],
+  A6: [105 * 96 / 25.4, 148 * 96 / 25.4],
+  Letter: [8.5 * 96, 11 * 96], Legal: [8.5 * 96, 14 * 96], Tabloid: [11 * 96, 17 * 96], Ledger: [17 * 96, 11 * 96],
 };
-const optionKeys = new Set(["format", "width", "height", "landscape", "margin", "media", "baseUrl", "assets", "fonts", "title", "metadata", "attachments", "pageNumbers", "maxPages"]);
+const optionKeys = new Set(["format", "width", "height", "landscape", "preferCSSPageSize", "margin", "media", "baseUrl", "assets", "fonts", "title", "metadata", "attachments", "pageNumbers", "headerTemplate", "footerTemplate", "maxPages"]);
 const unitScale: Record<string, number> = { px: 1, pt: 96 / 72, mm: 96 / 25.4, cm: 96 / 2.54, in: 96 };
 
 function length(value: Length, name: string): number {
@@ -30,6 +34,11 @@ export function normalizeOptions(options: PdfOptions = {}) {
     if (!optionKeys.has(key)) throw new TypeError(`Unknown PDF option: ${key}`);
   }
   if (options.landscape !== undefined && typeof options.landscape !== "boolean") throw new TypeError("landscape must be a boolean");
+  if (options.preferCSSPageSize !== undefined && typeof options.preferCSSPageSize !== "boolean") throw new TypeError("preferCSSPageSize must be a boolean");
+  for (const key of ["headerTemplate", "footerTemplate"] as const) {
+    if (options[key] !== undefined && typeof options[key] !== "string") throw new TypeError(`${key} must be an HTML string`);
+    if (new TextEncoder().encode(options[key] ?? "").byteLength > 1024 * 1024) throw new RangeError(`${key} exceeds the 1 MiB limit`);
+  }
   const format = options.format ?? "A4";
   if (!Object.hasOwn(formats, format)) throw new TypeError(`Unknown page format: ${String(format)}`);
   if ((options.width === undefined) !== (options.height === undefined)) throw new TypeError("width and height must be provided together");
@@ -62,8 +71,7 @@ export function normalizeOptions(options: PdfOptions = {}) {
     if (fontSize < 1 || fontSize > 48) throw new RangeError("pageNumbers.fontSize must be between 1 and 48 CSS pixels");
     pageNumbers = { template, align, fontSize };
   }
-  const footerHeight = pageNumbers ? pageNumbers.fontSize * 2 + 8 : 0;
-  if (width - margin.left - margin.right < 1 || height - margin.top - margin.bottom - footerHeight < 1) throw new RangeError("Margins and pageNumbers must leave at least one CSS pixel of content");
+  // Printable geometry is validated after external CSS @page rules have loaded.
   const media = options.media ?? "print";
   if (media !== "print" && media !== "screen") throw new TypeError("media must be print or screen");
   const maxPages = options.maxPages ?? 100;
@@ -92,5 +100,7 @@ export function normalizeOptions(options: PdfOptions = {}) {
   if (options.fonts !== undefined && !Array.isArray(options.fonts)) throw new TypeError("fonts must be an array of font bytes");
   const fonts = (options.fonts ?? []).map((font, i) => copyBytes(font, `fonts[${i}]`));
   if (fonts.reduce((total, font) => total + font.byteLength, 0) > 32 * 1024 * 1024) throw new RangeError("Fonts exceed the 32 MiB limit");
-  return { width, height, margin, media, maxPages, baseUrl: base.href, assets, assetResolver, fonts, pageNumbers, ...document };
+  return { width, height, margin, media, maxPages, baseUrl: base.href, assets, assetResolver, fonts, pageNumbers,
+    useCSSPageSize: options.preferCSSPageSize === true || (options.format === undefined && options.width === undefined),
+    headerTemplate: options.headerTemplate ?? null, footerTemplate: options.footerTemplate ?? null, ...document };
 }

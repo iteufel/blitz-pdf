@@ -16,8 +16,10 @@
   try {
     await Promise.all([init(), init()]);
     const requests = [];
-    const bytes = await renderPdf(`<link rel="stylesheet" href="main.css"><h1>Blitz PDF in the browser</h1><div class="box">Selectable text: café, office, affinity.<p><b>Bold</b> and <i>italic</i> stay as text.</p></div><p class="hidden">Must be hidden</p><p class="second">Second page from CSS</p>`, {
-      width: "160mm", height: "100mm", title: "Browser verification",
+    const bytes = await renderPdf(`<style>@page{size:160mm 100mm;margin:6mm}</style><link rel="stylesheet" href="main.css"><h1>Blitz PDF in the browser</h1><div class="box">Selectable text: café, office, affinity.<p><b>Bold</b> and <i>italic</i> stay as text.</p></div><p class="hidden">Must be hidden</p><p class="second">Second page from CSS</p>`, {
+      width: "300mm", height: "300mm", preferCSSPageSize: true, title: "Browser verification",
+      headerTemplate: '<div style="font:10px/14px sans-serif">Report <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
+      footerTemplate: '<div style="font:10px/14px sans-serif">Browser footer</div>',
       pageNumbers: { template: "Seite {page} von {pages}", fontSize: "8pt" },
       metadata: { author: "Browser app", language: "de-DE", xmp: [{
         name: "Test metadata", prefix: "test", namespaceUri: "urn:example:test:1.0#",
@@ -50,6 +52,9 @@
     const second = (await (await parsed.getPage(2)).getTextContent()).items.map(item=>item.str ?? "").join(" ").replace(/\s+/g, " ").trim();
     if (!second.includes("Second page from CSS") || text.includes("Second page from CSS")) throw new Error("Text on wrong page");
     if (!text.includes("Seite 1 von 2") || !second.includes("Seite 2 von 2")) throw new Error("Browser page numbering failed");
+    if (!text.includes("Report 1 of 2") || !second.includes("Report 2 of 2") || !second.includes("Browser footer")) throw new Error("Browser margin templates failed");
+    const view = (await parsed.getPage(1)).view;
+    if (Math.abs(view[2] - 160*72/25.4) > 0.001 || Math.abs(view[3] - 100*72/25.4) > 0.001) throw new Error("Browser CSS page size failed");
     await task.destroy();
     const workerResult = await new Promise((resolve, reject) => {
       const worker = new Worker("/tests/browser-worker.mjs", {type:"module"});
@@ -62,6 +67,10 @@
       const workerPdf = await workerTask.promise;
       const { metadata } = await workerPdf.getMetadata();
       if (metadata.get("test:runtime") !== "Worker" || metadata.get("dc:creator")[0] !== "Worker app") throw new Error("Worker metadata failed");
+      const workerText = (await (await workerPdf.getPage(2)).getTextContent()).items.map(item=>item.str ?? "").join(" ").replace(/\s+/g," ");
+      if (!workerText.includes("Worker report 2 of 2")) throw new Error("Worker HTML template failed");
+      const view = (await workerPdf.getPage(1)).view;
+      if (Math.abs(view[2] - 160*72/25.4) > 0.001) throw new Error("Worker CSS page size failed");
       const files = await workerPdf.getAttachments();
       if (files.size !== 2 || ![...files.values()].some(file => file.filename === "data.xml")) throw new Error("Worker attachment missing");
       const binaryId = [...files.entries()].find(([, file]) => file.filename === "worker.bin")[0];

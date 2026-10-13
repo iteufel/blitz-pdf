@@ -1982,7 +1982,6 @@ affects = "layout"
 type = "PageSize"
 initial = "computed::PageSize::auto()"
 struct = "page"
-engine = "gecko"
 spec = "https://drafts.csswg.org/css-page-3/#page-size-prop"
 animation_type = "none"
 rule_types_allowed = ["page"]

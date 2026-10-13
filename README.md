@@ -80,15 +80,17 @@ cross-origin isolation are not required.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `format` | `"A4"` | `A3`, `A4`, `A5`, `Letter`, `Legal`, or `Tabloid` |
+| `format` | `"A4"` | `A0`–`A6`, `Letter`, `Legal`, `Tabloid`, or `Ledger` |
 | `width`, `height` | From format | Supply both for custom dimensions; omit `format` |
 | `landscape` | `false` | Swap width and height |
+| `preferCSSPageSize` | `false` | Let CSS `@page size` override an explicit format or dimensions |
 | `margin` | `0` | One length or `{ top, right, bottom, left }`; omitted sides are zero |
 | `media` | `"print"` | CSS media queries: `print` or `screen` |
 | `title` | Unset | PDF metadata title; `metadata.title` takes precedence |
 | `metadata` | `{}` | Author, subject, keywords, dates, language, document ID, and custom XMP schemas |
 | `attachments` | `[]` | Direct embedded files with MIME types and PDF/A relationships |
 | `pageNumbers` | `false` | `true` or `{ template, align, fontSize }` for an automatic text footer |
+| `headerTemplate` / `footerTemplate` | Unset | HTML repeated in the top/bottom page margin, with `.pageNumber` and `.totalPages` placeholders |
 | `baseUrl` | `https://blitz-pdf.invalid/` | Resolve relative asset URLs |
 | `assets` | `{}` | Resource map or `(url) => data / Promise<data>`; data is a UTF-8 string, `Uint8Array`, or `ArrayBuffer` |
 | `fonts` | `[]` | Additional static TTF, OTF, WOFF, or WOFF2 font bytes |
@@ -98,6 +100,43 @@ Lengths accept numbers in CSS pixels (96 px = 1 inch), or strings with `px`,
 `pt`, `mm`, `cm`, or `in`. PDF dimensions use 72 points per inch. Page dimensions
 are limited to 19200 CSS pixels; margins must leave printable content.
 `getEngineVersion()` returns the package version and pinned Blitz revision.
+
+## CSS page settings
+
+Unqualified `@page` rules support `size`, `margin`, and the four individual
+margin properties. For example, this label uses a 105 mm by 148 mm page:
+
+```js
+const pdf = await renderPdf(`
+  <style>
+    @page { size: 105mm 148mm; margin: 5mm; margin-bottom: 8mm; }
+    html, body { margin: 0; }
+  </style>
+  <h1>Shipping label</h1>
+`);
+```
+
+`size: A4 landscape`, `size: landscape`, square sizes such as `size: 100mm`,
+and absolute length calculations are supported. Rules follow stylesheet and
+`@import` order, honor `!important`, and use the selected `print`/`screen` media.
+CSS page margins override the corresponding option margins; unspecified sides
+keep their option values. Percentages resolve against the corresponding page
+dimension. Margins must be non-negative and leave printable content.
+
+CSS size is used automatically when neither `format` nor `width`/`height` is
+provided. Explicit dimensions take precedence by default. Set
+`preferCSSPageSize: true` to let CSS size override them. `size: auto` keeps the
+option size, or A4 when no size was supplied. Content is laid out again at the
+chosen dimensions; it is not scaled from an A4 layout.
+
+Named formats are `A0`, `A1`, `A2`, `A3`, `A4`, `A5`, `A6`, `Letter`, `Legal`,
+`Tabloid` (11 by 17 inches), and `Ledger` (17 by 11 inches). `landscape: true`
+swaps the option dimensions. An explicit CSS orientation takes precedence when
+CSS controls the size.
+
+The page geometry is uniform throughout a document. Named pages, `:first`,
+`:left`/`:right` page selectors, CSS page margin boxes, cascade layers, and
+custom-property substitution inside `@page` are not implemented.
 
 ## Document metadata
 
@@ -369,6 +408,7 @@ vertical flow include:
   `page-break-after`, and `page-break-inside` aliases.
 - Inherited `widows` and `orphans` (positive integers; default 2).
 - Automatic protection of text lines, table rows, images, and SVG boxes.
+- Repeated table header and footer groups, with space reserved before splitting rows.
 
 ```html
 <style>
@@ -390,6 +430,18 @@ page are allowed to fragment, and impossible widow/orphan constraints are
 relaxed to make progress. A text line that cannot fit the printable height
 fails explicitly. Keep-with-next protects a heading even when the following
 paragraph spans multiple pages.
+
+The first `<thead>` and `<tfoot>` (or elements styled as `table-header-group`
+and `table-footer-group`) repeat on every fragment of their table. Their actual
+layout, column widths, backgrounds, and selectable text are retained. Use
+`display: table-row-group` to disable repetition. Headers stay with the first
+body row and footers with the last where they fit. Repetition stops when the
+table ends, and the extra space counts toward `maxPages`. Nested tables remain
+part of their containing row rather than independently repeating their groups.
+
+Pagination accounts for the subpixel difference between CSS dimensions and
+Blitz's rounded box edges, avoiding an extra page for an exactly fitting
+fractional-height label.
 
 ### Page numbers
 
@@ -416,6 +468,42 @@ margin **before pagination**. Numbers use the final page count, including
 intentional blanks. The footer uses embedded DejaVu Sans and the same Unicode
 shaping as body text, preserving selectable text and PDF/A-3u. It works with
 async assets in every runtime. `PageNumberOptions` is an exported TypeScript type.
+
+### Repeated HTML headers and footers
+
+```js
+const pdf = await renderPdf(reportHtml, {
+  margin: { top: "18mm", bottom: "15mm", left: "12mm", right: "12mm" },
+  headerTemplate: `
+    <div style="font: 10pt/14pt sans-serif; padding-top: 4mm">
+      <img src="logo.svg" width="24" height="24"> Quarterly report
+    </div>`,
+  footerTemplate: `
+    <div style="font: 9pt/12pt sans-serif; text-align: right">
+      Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+    </div>`,
+  assets: { "logo.svg": logoSvg },
+});
+```
+
+Templates occupy the top/bottom margins between the left and right margins,
+including on intentional blank pages. Supply enough margin height for each
+template; overflow fails with an error. Both start at the top of their margin
+band, so use CSS padding or flex layout to position their contents within it.
+Body content does not overlap those bands. `pageNumbers` can also be used; its
+automatic footer remains above the bottom margin.
+
+Each template is a separate HTML document with zero default body margin and a
+transparent background. Template-local inline styles, `<style>`, and linked
+stylesheets are supported. Body CSS does not cascade into templates. They share
+the document's asset resolver, loaded font collection, supplied fonts, base URL,
+and media type. URLs are resolved and deduplicated across the whole render,
+including async CSS, fonts, and images. Scripts are not run. Text stays selectable
+and graphics use the same vector PDF pipeline as the body.
+
+Elements with class `pageNumber` or `totalPages` have their contents replaced
+with the final page number/count before layout. Templates are limited to 1 MiB
+of HTML each. Omit a template or pass an empty string to disable it.
 
 ## German invoice example
 
@@ -447,9 +535,9 @@ transition rule. [§ 14 UStG](https://www.gesetze-im-internet.de/ustg_1980/__14.
 - Text retains shaped glyphs and Unicode cluster mappings, including ligatures.
   Unrecognized or ambiguous text runs are rejected rather than assigned guessed
   Unicode.
-- Pagination fragments one continuous vertical layout. CSS `@page`, repeated
-  table/fixed headers, nested multicolumn fragmentation, and independent
-  fragmentation of parallel flex/grid flows are not implemented. Oversized
+- Pagination fragments one continuous vertical layout. Per-page geometry,
+  repeated fixed-position body elements, nested multicolumn fragmentation, and
+  independent fragmentation of parallel flex/grid flows are not implemented. Oversized
   boxes/images may span pages; box decorations are sliced rather than cloned.
 - CSS filters, blurred shadows, non-default variable font instances, and
   repeating radial gradients are rejected. Use static font faces. There is no
