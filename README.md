@@ -9,8 +9,15 @@ Runs in **Bun, Node.js, and browsers**. Text is selectable and searchable, fonts
 are subsetted and embedded, and shapes remain vectors. No Chromium, GPU, native
 addon, or rendering service. Source images remain images.
 
-This is an early implementation; see the limitations below. The repository
-builds an npm package. It has not been published to the npm registry.
+This is an early implementation; see the limitations below.
+
+## Install
+
+```sh
+npm install blitz-pdf
+# or
+bun add blitz-pdf
+```
 
 ## Node.js and Bun
 

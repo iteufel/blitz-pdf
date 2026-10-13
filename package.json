@@ -4,6 +4,14 @@
   "description": "Render HTML and CSS to PDF with Blitz and WebAssembly in Node.js, Bun, and browsers.",
   "type": "module",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iteufel/blitz-pdf.git"
+  },
+  "homepage": "https://github.com/iteufel/blitz-pdf#readme",
+  "bugs": {
+    "url": "https://github.com/iteufel/blitz-pdf/issues"
+  },
   "engines": {
     "node": ">=20"
   },
