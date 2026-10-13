@@ -1,0 +1,75 @@
+name: Publish to npm
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-publish-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Check release version
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      tag: ${{ steps.release.outputs.tag }}
+      filename: ${{ steps.release.outputs.filename }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Check tag and package versions
+        id: release
+        run: node scripts/check-release.mjs
+
+  build:
+    name: Build and validate package
+    needs: release
+    uses: ./.github/workflows/ci.yml
+    with:
+      release: true
+
+  publish:
+    name: Publish verified archive
+    needs: [release, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Install npm with trusted publishing support
+        run: npm install --global npm@12.2.0
+      - uses: actions/download-artifact@v4
+        with:
+          name: npm-package
+          path: release
+      - name: Publish with npm trusted publishing
+        env:
+          RELEASE_FILE: ${{ needs.release.outputs.filename }}
+          RELEASE_TAG: ${{ needs.release.outputs.tag }}
+        run: npm publish "release/$RELEASE_FILE" --access public --provenance --tag "$RELEASE_TAG"
+      - name: Verify the published archive
+        env:
+          RELEASE_FILE: ${{ needs.release.outputs.filename }}
+          RELEASE_VERSION: ${{ needs.release.outputs.version }}
+        run: node scripts/verify-release.mjs "release/$RELEASE_FILE" "$RELEASE_VERSION"

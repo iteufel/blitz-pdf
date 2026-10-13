@@ -328,6 +328,41 @@ For browser verification, run `npm run test:browser` and open
 `http://127.0.0.1:4173`. CI builds WASM, runs Bun and Node tests, validates the
 captured PDFs with veraPDF, benchmarks, and packs an npm artifact.
 
+## Publishing releases
+
+Push a tag matching the package version, such as `v0.1.1`, to start
+[Publish to npm](https://github.com/iteufel/blitz-pdf/actions/workflows/publish.yml).
+The workflow checks that the tag, npm manifests, and root Rust package versions
+agree. It then builds WASM from source, runs the Bun and Node tests, validates
+PDF/A-3u with veraPDF, runs benchmarks, and publishes the verified archive.
+Release builds do not restore dependency or compiler caches.
+
+Publishing uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishers/)
+with GitHub OIDC and provenance. The npm trust must permit direct publishing from
+`iteufel/blitz-pdf`, workflow `publish.yml`, with no environment restriction.
+No `NPM_TOKEN` repository secret is needed. Stable versions use the npm `latest`
+tag; prereleases use `next`. After publishing, the workflow checks that npm serves
+the exact archive it built, comparing SHA-512 integrity.
+
+For the next patch release:
+
+1. Run `npm version patch --no-git-tag-version` to update both npm manifests.
+2. Set the same version in `Cargo.toml` and the `blitz-pdf-wasm` entry in
+   `Cargo.lock`.
+3. Commit the changes, create the matching Git tag, and push both:
+
+```sh
+git add package.json package-lock.json Cargo.toml Cargo.lock
+git commit -m "chore: release 0.1.1"
+git tag v0.1.1
+git push origin main v0.1.1
+```
+
+To retry a failed release, rerun its GitHub Actions run or use
+`gh workflow run publish.yml --ref v0.1.1`. Manual runs require a matching version
+tag too. Published npm versions cannot be overwritten; subsequent releases need
+a new version.
+
 ## Performance benchmarks
 
 ```sh
