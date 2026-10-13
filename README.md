@@ -341,8 +341,10 @@ Publishing uses [npm trusted publishing](https://docs.npmjs.com/trusted-publishe
 with GitHub OIDC and provenance. The npm trust must permit direct publishing from
 `iteufel/blitz-pdf`, workflow `publish.yml`, with no environment restriction.
 No `NPM_TOKEN` repository secret is needed. Stable versions use the npm `latest`
-tag; prereleases use `next`. After publishing, the workflow checks that npm serves
-the exact archive it built, comparing SHA-512 integrity.
+tag; prereleases use `next`. After publishing, the workflow allows up to five
+minutes for registry propagation and checks that npm serves the exact archive it
+built, comparing SHA-512 integrity. Retrying an already-published version succeeds
+only when its archive is identical; a different archive fails.
 
 For the next patch release:
 
@@ -360,7 +362,7 @@ git push origin main "v$RELEASE_VERSION"
 ```
 
 To retry a failed release, rerun its GitHub Actions run or use
-`gh workflow run publish.yml --ref v0.1.1`. Manual runs require a matching version
+`gh workflow run publish.yml --ref v<version>`. Manual runs require a matching version
 tag too. Published npm versions cannot be overwritten; subsequent releases need
 a new version.
 

@@ -67,7 +67,17 @@ jobs:
         env:
           RELEASE_FILE: ${{ needs.release.outputs.filename }}
           RELEASE_TAG: ${{ needs.release.outputs.tag }}
-        run: npm publish "./release/$RELEASE_FILE" --access public --provenance --tag "$RELEASE_TAG"
+          RELEASE_VERSION: ${{ needs.release.outputs.version }}
+        run: |
+          if node scripts/verify-release.mjs "release/$RELEASE_FILE" "$RELEASE_VERSION" --check; then
+            echo "This exact release archive is already published."
+          else
+            publish_check_status=$?
+            if [ "$publish_check_status" -ne 3 ]; then
+              exit "$publish_check_status"
+            fi
+            npm publish "./release/$RELEASE_FILE" --access public --provenance --tag "$RELEASE_TAG"
+          fi
       - name: Verify the published archive
         env:
           RELEASE_FILE: ${{ needs.release.outputs.filename }}

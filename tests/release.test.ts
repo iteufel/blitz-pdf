@@ -4,6 +4,9 @@ import { copyFileSync, existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync,
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
+import { fileURLToPath } from "node:url";
+
+const verifyScript = fileURLToPath(new URL("../scripts/verify-release.mjs", import.meta.url));
 
 function checkRelease({ version = "0.1.0", ref = `refs/tags/v${version}`, drift = "" } = {}) {
   const root = mkdtempSync(join(tmpdir(), "blitz-pdf-release-"));
@@ -61,8 +64,8 @@ describe("release validation", () => {
 });
 
 describe("published archive verification", () => {
-  for (const matches of [true, false]) {
-    test(matches ? "accepts the exact published archive" : "rejects a different published archive", () => {
+  for (const [checkOnly, matches] of [[false, true], [false, false], [true, true], [true, false]]) {
+    test(`${checkOnly ? "retry check" : "verification"}: ${matches ? "accepts the exact published archive" : "rejects a different published archive"}`, () => {
       const root = mkdtempSync(join(tmpdir(), "blitz-pdf-registry-"));
       try {
         const archive = join(root, "package.tgz");
@@ -71,10 +74,11 @@ describe("published archive verification", () => {
         writeFileSync(archive, content);
         const integrity = `sha512-${createHash("sha512").update(matches ? content : Buffer.from("different archive")).digest("base64")}`;
         writeFileSync(preload, `globalThis.fetch = async (url) => {
-          if (url !== "https://registry.npmjs.org/blitz-pdf/0.1.0") throw new Error("Unexpected registry URL");
+          if (url.origin + url.pathname !== "https://registry.npmjs.org/blitz-pdf/0.1.0") throw new Error("Unexpected registry URL");
+          if (!url.searchParams.has("release-check")) throw new Error("Missing cache-busting query");
           return new Response(JSON.stringify(${JSON.stringify({ name: "blitz-pdf", version: "0.1.0", dist: { integrity } })}), { status: 200 });
         };`);
-        const result = spawnSync("node", ["--import", preload, new URL("../scripts/verify-release.mjs", import.meta.url).pathname, archive, "0.1.0"], { encoding: "utf8" });
+        const result = spawnSync("node", ["--import", preload, verifyScript, archive, "0.1.0", ...(checkOnly ? ["--check"] : [])], { encoding: "utf8" });
         if (matches) {
           expect(result.status).toBe(0);
           expect(result.stdout).toContain("archive integrity matches");
@@ -87,4 +91,43 @@ describe("published archive verification", () => {
       }
     });
   }
+
+  for (const [status, expectedExit] of [[404, 3], [401, 1], [429, 1], [503, 1]]) {
+    test(`retry check handles HTTP ${status} without mistaking failures for missing versions`, () => {
+      const root = mkdtempSync(join(tmpdir(), "blitz-pdf-registry-"));
+      try {
+        const archive = join(root, "package.tgz");
+        const preload = join(root, "registry.mjs");
+        writeFileSync(archive, "test release archive");
+        writeFileSync(preload, `globalThis.fetch = async () => new Response("{}", { status: ${status} });`);
+        const result = spawnSync("node", ["--import", preload, verifyScript, archive, "0.1.0", "--check"], { encoding: "utf8" });
+        expect(result.status).toBe(expectedExit);
+      } finally {
+        rmSync(root, { recursive: true, force: true });
+      }
+    });
+  }
+
+  test("waits for registry propagation and bypasses a cached missing-version response", () => {
+    const root = mkdtempSync(join(tmpdir(), "blitz-pdf-registry-"));
+    try {
+      const archive = join(root, "package.tgz");
+      const preload = join(root, "registry.mjs");
+      const content = Buffer.from("test release archive");
+      writeFileSync(archive, content);
+      const integrity = `sha512-${createHash("sha512").update(content).digest("base64")}`;
+      writeFileSync(preload, `let previous;
+        globalThis.fetch = async (url) => {
+          if (!previous) { previous = url.href; return new Response("{}", { status: 404 }); }
+          if (previous === url.href) throw new Error("Reused the cached metadata URL");
+          return new Response(JSON.stringify(${JSON.stringify({ name: "blitz-pdf", version: "0.1.0", dist: { integrity } })}), { status: 200 });
+        };`);
+      const result = spawnSync("node", ["--import", preload, verifyScript, archive, "0.1.0"], { encoding: "utf8", timeout: 8_000 });
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain("Waiting for blitz-pdf@0.1.0");
+      expect(result.stdout).toContain("archive integrity matches");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  }, 10_000);
 });
