@@ -85,7 +85,9 @@ cross-origin isolation are not required.
 | `landscape` | `false` | Swap width and height |
 | `margin` | `0` | One length or `{ top, right, bottom, left }`; omitted sides are zero |
 | `media` | `"print"` | CSS media queries: `print` or `screen` |
-| `title` | Unset | PDF metadata title |
+| `title` | Unset | PDF metadata title; `metadata.title` takes precedence |
+| `metadata` | `{}` | Author, subject, keywords, dates, language, document ID, and custom XMP schemas |
+| `attachments` | `[]` | Direct embedded files with MIME types and PDF/A relationships |
 | `pageNumbers` | `false` | `true` or `{ template, align, fontSize }` for an automatic text footer |
 | `baseUrl` | `https://blitz-pdf.invalid/` | Resolve relative asset URLs |
 | `assets` | `{}` | Resource map or `(url) => data / Promise<data>`; data is a UTF-8 string, `Uint8Array`, or `ArrayBuffer` |
@@ -96,6 +98,166 @@ Lengths accept numbers in CSS pixels (96 px = 1 inch), or strings with `px`,
 `pt`, `mm`, `cm`, or `in`. PDF dimensions use 72 points per inch. Page dimensions
 are limited to 19200 CSS pixels; margins must leave printable content.
 `getEngineVersion()` returns the package version and pinned Blitz revision.
+
+## Document metadata
+
+```js
+const pdf = await renderPdf(html, {
+  metadata: {
+    title: "Project report",
+    author: ["Ada Example", "Example GmbH"], // A single string also works.
+    subject: "Project delivery and supporting documents",
+    keywords: ["project", "delivery"],
+    creator: "My application",
+    language: "de-DE",
+    creationDate: "2026-10-13T10:00:00+02:00",
+    modificationDate: new Date("2026-10-14T08:00:00Z"),
+    documentId: "project-42-report", // Stable identity across revisions.
+  },
+});
+```
+
+Standard metadata is synchronized between the PDF information dictionary and
+XMP. `language` also sets the document catalog's language. `producer` defaults
+to `blitz-pdf` and its version and can be overridden. Creation time defaults to
+the start of the render; modification time defaults to creation time and must
+not precede it. Dates accept a valid `Date` or a timestamp with an explicit
+timezone, with at most three fractional-second digits. They are stored in UTC
+at whole-second precision. `documentId` is a stable input from which the engine
+derives the PDF document ID; it is not copied literally into the ID field.
+
+The original top-level `title` option remains supported. `metadata.title`
+overrides it, including an empty string to omit the title. Metadata strings must
+contain valid XML characters and fit in 16 KiB of UTF-8 per field. Author and
+keyword lists allow up to 256 entries and 16 KiB when joined. CR/CRLF line endings
+are normalized to LF to keep Info and XMP consistent.
+
+## Embedded files
+
+```js
+const pdf = await renderPdf(html, {
+  attachments: [
+    {
+      name: "data.xml",
+      data: xmlString, // UTF-8 text, Uint8Array/Buffer, or ArrayBuffer.
+      mimeType: "text/xml",
+      description: "Structured document data",
+      relationship: "Alternative",
+    },
+    {
+      name: "supporting-data.csv",
+      data: "item,quantity\nExample,2\n",
+      mimeType: "text/csv",
+      relationship: "Supplement",
+    },
+  ],
+});
+```
+
+Files are embedded directly, without going through the HTML asset resolver.
+`data` is the file's content, never a filename or URL to load. Use `readFile`,
+`fetch(...).arrayBuffer()`, or `File.arrayBuffer()` before calling `renderPdf`.
+The library snapshots supplied bytes and metadata before asynchronous work.
+
+Each attachment has a Unicode filename, a MIME type, an uncompressed size and
+modification date, and a document-level `/AFRelationship`. It appears both in
+the catalog's `/AF` array and in the `/EmbeddedFiles` name tree used by PDF
+viewers. `relationship` accepts `Source`, `Data`, `Alternative`, `Supplement`,
+or `Unspecified` (the default). MIME type defaults to `application/octet-stream`,
+description to the filename, and modification date to the document's modification
+date. MIME parameters such as `; charset=utf-8` are not accepted. Set
+`compress: true` or `false` to control compression; by default the engine chooses.
+
+Up to 100 files and 64 MiB of combined attachment contents are allowed, separately
+from HTML asset limits. Filenames must be at most 255 UTF-8 bytes, without
+directories, colons, or control characters. Duplicate filenames, including
+Unicode normalization equivalents, are rejected. Zero-byte files are supported.
+Attachment contents are preserved without interpreting or validating their format.
+
+## Custom XMP schemas
+
+`metadata.xmp` adds application-specific text properties and their PDF/A extension
+schema descriptions to the existing XMP packet. Standard metadata and PDF/A
+identification remain present.
+
+```js
+const pdf = await renderPdf(html, {
+  metadata: {
+    xmp: [{
+      name: "Project metadata",
+      namespaceUri: "urn:example:project:1.0#",
+      prefix: "project",
+      properties: [{
+        name: "ProjectId",
+        value: "PR-0042",
+        description: "Identifier of the project this document belongs to",
+        category: "external", // Default; use internal for content-derived values.
+      }],
+    }],
+  },
+});
+```
+
+Every property is declared as XMP `Text`; values and descriptions are escaped
+as XML. Schema names and property descriptions must be non-empty. Prefixes and
+property names use ASCII XML names without colons or an `xml` prefix. Namespace
+URIs must be absolute ASCII URIs with whitespace and XML delimiters percent-encoded.
+Built-in namespaces/prefixes are reserved. Duplicate prefixes, namespace URIs,
+or property names within one schema are rejected. Each schema requires at least
+one property. Limits are 32 schemas, 256 properties in total, and 1 MiB of combined
+schema text, in addition to the per-field limit. Structured XMP values and raw
+XMP packet replacement are not currently exposed.
+
+### Factur-X / ZUGFeRD example
+
+The generic attachment and XMP APIs can express Factur-X/ZUGFeRD packaging. For
+example, with matching HTML and already-validated **EN 16931** CII invoice XML:
+
+```js
+const pdf = await renderPdf(invoiceHtml, {
+  attachments: [{
+    name: "factur-x.xml", data: invoiceXml, mimeType: "text/xml",
+    description: "Invoice XML", relationship: "Alternative",
+  }],
+  metadata: {
+    title: "Invoice RE-0042", language: "de-DE",
+    xmp: [{
+      name: "Factur-X PDFA Extension Schema",
+      namespaceUri: "urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#",
+      prefix: "fx",
+      properties: [
+        { name: "DocumentFileName", value: "factur-x.xml", description: "Embedded invoice filename" },
+        { name: "DocumentType", value: "INVOICE", description: "Document type" },
+        { name: "Version", value: "1.0", description: "Schema version" },
+        { name: "ConformanceLevel", value: "EN 16931", description: "Invoice profile" },
+      ],
+    }],
+  },
+});
+```
+
+These settings follow the [PDF embedding and XMP requirements](https://www.pdflib.com/pdf-knowledge-base/zugferd-and-factur-x/)
+for Factur-X 1.x / ZUGFeRD 2.1+. The XMP `Version` is `1.0`, not the release number.
+Choose the profile and relationship for your document: `Data` for MINIMUM/BASIC WL;
+normally `Alternative` for BASIC, EN 16931, or EXTENDED. `Source` applies in the
+specified cases where the PDF is derived from XML and the recipient is outside
+Germany. The XML filename and XMP `DocumentFileName` must agree. See the
+[FeRD specification and validation artifacts](https://www.ferd-net.de/publikationen-produkte/publikationen/detailseite/zugferd-252-english)
+for the version/profile you use.
+
+The renderer does not generate invoice XML, validate XSD/Schematron rules, infer
+profiles, or check agreement between PDF and XML. Applications supply and validate
+these inputs. PDF/A conformance alone does not establish invoice conformance.
+
+The runnable example accepts your HTML, XML, and profile:
+
+```sh
+npm run example:zugferd -- invoice.html invoice.xml "EN 16931" output/pdf/invoice.pdf
+```
+
+`PdfAttachment`, `AttachmentRelationship`, `PdfMetadata`, `PdfDate`,
+`PdfXmpSchema`, and `PdfXmpProperty` are exported TypeScript types in Node/Bun
+and browser entry points.
 
 ## Resources and fonts
 
@@ -162,7 +324,7 @@ system font discovery. Fonts passed in `fonts` use their internal family names;
 use `@font-face` with an asset URL for a CSS alias. Supply fonts for scripts not
 covered by the bundled family.
 
-Input limits: 16 MiB HTML, 64 MiB supplied assets, 32 MiB supplied fonts, and 1024
+Input limits: 16 MiB HTML, 64 MiB supplied assets, 64 MiB attachments, 32 MiB supplied fonts, and 1024
 resource requests. These are practical limits, not a complete sandbox; isolate
 untrusted documents in a terminable worker with application limits.
 
@@ -273,7 +435,8 @@ alongside the PDF for inspection.
 
 The [example source and scope](examples/german-invoice/README.md) explain the
 fictitious data and the German invoice fields. This is a **PDF/A-3u example
-without embedded XML**, as opposed to a structured e-invoice. Its 2026 domestic
+without embedded XML**. Use the generic [attachment and XMP APIs](#factur-x--zugferd-example)
+with independently generated, matching invoice XML for a structured e-invoice. Its 2026 domestic
 B2B scenario assumes the recipient agrees to PDF delivery under the applicable
 transition rule. [§ 14 UStG](https://www.gesetze-im-internet.de/ustg_1980/__14.html),
 [§ 27(38) UStG](https://www.gesetze-im-internet.de/ustg_1980/__27.html).
@@ -318,8 +481,9 @@ the tarball; it does not publish. Install locally using
 `npm install ./blitz-pdf-<version>.tgz`.
 
 The pinned Stylo source in `vendor/stylo` enables paged-media properties in the
-Servo build; `vendor/README.md` records the small patch. Its MPL-2.0 source is
-included in the npm archive.
+Servo build. `vendor/krilla` adds custom XMP schema support and independent
+modification dates. `vendor/README.md` records both patches; the sources and
+licenses are included in the npm archive.
 
 `bun test` exercises the compiled module through its public package export. Tests
 extract Unicode with PDF.js and inspect embedded fonts, vector paths, absence

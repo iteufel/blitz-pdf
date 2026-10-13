@@ -1,4 +1,6 @@
 import { assetBytes, copyBytes, MAX_ASSET_BYTES } from "./assets.js";
+import { normalizeDocumentOptions } from "./document-options.js";
+import { record } from "./validation.js";
 import type { Length, PageFormat, PageNumberOptions, PdfOptions } from "./types.js";
 
 const formats: Record<PageFormat, readonly [number, number]> = {
@@ -7,7 +9,7 @@ const formats: Record<PageFormat, readonly [number, number]> = {
   A5: [148 * 96 / 25.4, 210 * 96 / 25.4],
   Letter: [8.5 * 96, 11 * 96], Legal: [8.5 * 96, 14 * 96], Tabloid: [11 * 96, 17 * 96],
 };
-const optionKeys = new Set(["format", "width", "height", "landscape", "margin", "media", "baseUrl", "assets", "fonts", "title", "pageNumbers", "maxPages"]);
+const optionKeys = new Set(["format", "width", "height", "landscape", "margin", "media", "baseUrl", "assets", "fonts", "title", "metadata", "attachments", "pageNumbers", "maxPages"]);
 const unitScale: Record<string, number> = { px: 1, pt: 96 / 72, mm: 96 / 25.4, cm: 96 / 2.54, in: 96 };
 
 function length(value: Length, name: string): number {
@@ -20,13 +22,6 @@ function length(value: Length, name: string): number {
   } else throw new TypeError(`${name} must be a CSS length`);
   if (!Number.isFinite(result) || result < 0) throw new RangeError(`${name} must be finite and non-negative`);
   return result;
-}
-
-function record(value: unknown, name: string): void {
-  if (value === null || typeof value !== "object" || Array.isArray(value) ||
-      ![Object.prototype, null].includes(Object.getPrototypeOf(value))) {
-    throw new TypeError(`${name} must be a plain object`);
-  }
 }
 
 export function normalizeOptions(options: PdfOptions = {}) {
@@ -73,7 +68,7 @@ export function normalizeOptions(options: PdfOptions = {}) {
   if (media !== "print" && media !== "screen") throw new TypeError("media must be print or screen");
   const maxPages = options.maxPages ?? 100;
   if (!Number.isInteger(maxPages) || maxPages < 1 || maxPages > 1000) throw new RangeError("maxPages must be an integer between 1 and 1000");
-  if (options.title !== undefined && typeof options.title !== "string") throw new TypeError("title must be a string");
+  const document = normalizeDocumentOptions(options);
   const baseUrl = options.baseUrl ?? "https://blitz-pdf.invalid/";
   if (typeof baseUrl !== "string") throw new TypeError("baseUrl must be an absolute URL string");
   let base: URL;
@@ -97,5 +92,5 @@ export function normalizeOptions(options: PdfOptions = {}) {
   if (options.fonts !== undefined && !Array.isArray(options.fonts)) throw new TypeError("fonts must be an array of font bytes");
   const fonts = (options.fonts ?? []).map((font, i) => copyBytes(font, `fonts[${i}]`));
   if (fonts.reduce((total, font) => total + font.byteLength, 0) > 32 * 1024 * 1024) throw new RangeError("Fonts exceed the 32 MiB limit");
-  return { width, height, margin, media, maxPages, baseUrl: base.href, assets, assetResolver, fonts, pageNumbers, title: options.title ?? null };
+  return { width, height, margin, media, maxPages, baseUrl: base.href, assets, assetResolver, fonts, pageNumbers, ...document };
 }

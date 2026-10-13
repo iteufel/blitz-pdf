@@ -71,7 +71,8 @@
     "example:node": "node examples/node.mjs",
     "example:bun": "bun examples/bun.ts",
     "example:pagination": "node examples/pagination.mjs",
-    "example:german-invoice": "node examples/german-invoice.mjs"
+    "example:german-invoice": "node examples/german-invoice.mjs",
+    "example:zugferd": "node examples/zugferd.mjs"
   },
   "keywords": [
     "pdf",

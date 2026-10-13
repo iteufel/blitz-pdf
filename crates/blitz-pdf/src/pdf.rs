@@ -10,7 +10,6 @@ use krilla::{
     configure::{Archival, ConfigurationBuilder},
     geom::{Path, PathBuilder, Point, Size, Transform},
     image::Image,
-    metadata::{DateTime, Metadata},
     num::NormalizedF32,
     page::PageSettings,
     paint::{
@@ -388,12 +387,12 @@ fn intersects_page(shape: &BezPath, affine: Affine, top: f64, bottom: f64) -> bo
 pub fn render(
     scene: &Scene,
     index: &TextIndex,
-    [width, height]: [f64; 2],
-    margin: &crate::Margins,
     ranges: &[crate::pagination::PageRange],
-    title: Option<&str>,
-    page_numbers: Option<&crate::page_numbers::PageNumberOptions>,
+    options: &crate::Options,
 ) -> Result<Vec<u8>, String> {
+    let (width, height) = (options.width, options.height);
+    let margin = &options.margin;
+    let page_numbers = options.page_numbers.as_ref();
     let content_width = width - margin.left - margin.right;
     // Enforce PDF/A-3u on every export: ICC-managed colors, output intent,
     // embedded fonts, Unicode mappings and matching XMP identification.
@@ -406,21 +405,7 @@ pub fn render(
         configuration,
         ..Default::default()
     });
-    let now = js_sys::Date::new_0();
-    let date = DateTime::new(now.get_utc_full_year() as u16)
-        .month(now.get_utc_month() as u8 + 1)
-        .day(now.get_utc_date() as u8)
-        .hour(now.get_utc_hours() as u8)
-        .minute(now.get_utc_minutes() as u8)
-        .second(now.get_utc_seconds() as u8)
-        .utc_offset_hour(0);
-    let mut metadata = Metadata::new()
-        .producer(format!("blitz-pdf {}", env!("CARGO_PKG_VERSION")))
-        .creation_date(date);
-    if let Some(title) = title {
-        metadata = metadata.title(title.to_owned());
-    }
-    pdf.set_metadata(metadata);
+    crate::document::apply(&mut pdf, options)?;
     let mut cache = Cache::default();
     let mut numbering = page_numbers
         .map(|options| crate::page_numbers::PageNumbers::new(options, [width, height], margin));

@@ -1,3 +1,4 @@
+mod document;
 mod page_numbers;
 mod pagination;
 mod pdf;
@@ -28,6 +29,10 @@ struct Options {
     media: String,
     base_url: String,
     title: Option<String>,
+    #[serde(default)]
+    metadata: document::DocumentMetadata,
+    #[serde(default)]
+    attachments: Vec<document::Attachment>,
     page_numbers: Option<page_numbers::PageNumberOptions>,
     assets: BTreeMap<String, ByteBuf>,
     fonts: Vec<ByteBuf>,
@@ -97,6 +102,7 @@ impl Drop for RenderJob {
 
 impl RenderJob {
     fn build(html: &str, mut o: Options, dynamic: bool) -> Result<Self, String> {
+        document::validate(&o)?;
         let dimensions = [
             o.width,
             o.height,
@@ -277,15 +283,7 @@ impl RenderJob {
             0,
         );
         let pages = pagination.pages(&scene, total_height, content_height, o.max_pages)?;
-        pdf::render(
-            &scene,
-            &index,
-            [o.width, o.height],
-            &o.margin,
-            &pages,
-            o.title.as_deref(),
-            o.page_numbers.as_ref(),
-        )
+        pdf::render(&scene, &index, &pages, o)
     }
 }
 
