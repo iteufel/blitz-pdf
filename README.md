@@ -11,6 +11,60 @@ addon, or rendering service. Source images remain images.
 
 This is an early implementation; see the limitations below.
 
+## Online converter
+
+Try the [HTML-to-PDF converter](https://iteufel.github.io/blitz-pdf/): paste or
+upload HTML, choose page size, orientation and margins, preview the generated
+pages, then download the PDF. The default example is a borderless event ticket
+on a custom 190 × 100 mm page. Other examples include a 4 × 6 inch shipping label,
+an invoice, a two-page report, a flight-simulator dashboard with route and
+telemetry charts, and a two-page energy-simulation report with comparison tables.
+Selecting an example also loads its recommended page size, orientation, margins,
+and page-number settings. The simulator examples are static layouts with
+illustrative data, ready to edit and export.
+
+Conversion runs in a terminable Web Worker. Documents are never uploaded or
+saved by the site. Use self-contained HTML with inline CSS and data URLs for
+images and fonts; external resources and local file references are rejected.
+JavaScript in the document is not executed. The playground limits input to
+2 MiB, output to 100 pages, and conversion to 60 seconds. Editing the source or
+settings disables the old download until a new PDF is generated.
+
+### Build and serve the site
+
+After the library's normal development build (see [Development](#development)):
+
+```sh
+npm run build:site
+npm run test:site
+npm run dev:site
+# Open http://127.0.0.1:4173
+```
+
+`website/` contains the static interface. `build:site` copies the current local
+JavaScript/WASM build and PDF.js into the ignored `_site/` directory, including
+licenses. There are no runtime CDN dependencies. Rust is only needed to build
+the library; after that, UI changes require only `npm run build:site`.
+
+To verify a GitHub project-page path locally:
+
+```sh
+SITE_BASE_PATH=/blitz-pdf PORT=4174 npm run dev:site
+# Open http://127.0.0.1:4174/blitz-pdf/
+```
+
+### GitHub Pages deployment
+
+[Deploy HTML-to-PDF converter](.github/workflows/pages.yml) builds the engine
+from source, tests the site, and uploads `_site/` as a Pages artifact. Pull
+requests build and test without deploying; pushes to `main` deploy through the
+`github-pages` environment. No container or backend service is needed.
+
+In the repository's **Settings → Pages**, select **GitHub Actions** as the
+publishing source. Allow `main` in the `github-pages` environment's deployment
+branch rules. After merging, the workflow publishes to the repository's Pages
+URL. All asset paths are relative, so forks and custom domains work too.
+
 ## Install
 
 ```sh
