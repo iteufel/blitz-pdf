@@ -199,6 +199,83 @@ export const examples = {
 </body>
 </html>`
   },
+  shipping: {
+    name: "sample-shipping-label",
+    options: { format: undefined, margin: "0mm", pageNumbers: false, preferCSSPageSize: true },
+    html: `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page { size: 4in 6in; margin: 0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #111; background: white; font: 10px/14px sans-serif; }
+    p, h1, h2, figure { margin: 0; }
+    .label { width: 4in; padding: 18px; }
+    .header { display: grid; grid-template-columns: 48px 1fr; gap: 14px;
+      align-items: center; margin-bottom: 12px; }
+    .service { border: 3px solid #111; font-size: 32px; line-height: 42px;
+      font-weight: bold; text-align: center; }
+    h1 { font-size: 21px; line-height: 25px; letter-spacing: 1px; }
+    .caption { display: block; font-size: 8px; line-height: 12px;
+      letter-spacing: 1.3px; font-weight: bold; }
+    .sender { display: grid; grid-template-columns: 1fr 90px; gap: 14px;
+      border-bottom: 2px solid #111; padding-bottom: 12px; }
+    .sender .caption { margin-bottom: 4px; }
+    .reference { text-align: right; }
+    .destination { padding: 12px 0; }
+    .destination .caption { margin-bottom: 6px; }
+    h2 { font-size: 22px; line-height: 28px; }
+    .address { font-size: 18px; line-height: 24px; }
+    .country { font-size: 11px; line-height: 18px; margin-top: 3px; }
+    .routing { display: grid; grid-template-columns: 1fr 90px;
+      background: #111; color: white; padding: 10px 12px; }
+    .routing strong { display: block; font-size: 27px; line-height: 32px; }
+    .route { text-align: right; }
+    .package { display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 12px; padding: 13px 0; border-bottom: 2px solid #111; }
+    .package strong { display: block; font-size: 13px; line-height: 20px; }
+    .tracking { padding-top: 12px; text-align: center; }
+    .barcode { display: block; width: 100%; height: 58px; margin: 8px 0; }
+    .tracking-number { font: bold 15px/20px monospace; letter-spacing: 1px; }
+    .footer { display: flex; justify-content: space-between; gap: 8px;
+      margin-top: 10px; font-size: 8px; line-height: 12px; }
+  </style>
+</head>
+<body>
+  <article class="label">
+    <header class="header"><div class="service">P</div>
+      <div><h1>NORTHPOST</h1><span class="caption">STANDARD / DOMESTIC PARCEL</span></div></header>
+    <section class="sender">
+      <div><span class="caption">FROM</span><p>North Studio<br>Werkstrasse 12<br>10115 Berlin, Germany</p></div>
+      <div class="reference"><span class="caption">ORDER</span><strong>NS-1042</strong><br>24 OCT 2026</div>
+    </section>
+    <section class="destination">
+      <span class="caption">SHIP TO</span><h2>Sam Taylor</h2>
+      <p class="address">Lindenweg 18<br>20457 Hamburg</p><p class="country">GERMANY / DE</p>
+    </section>
+    <section class="routing">
+      <div><span class="caption">DESTINATION</span><strong>DE 20457</strong></div>
+      <div class="route"><span class="caption">ROUTE</span><strong>H04</strong></div>
+    </section>
+    <section class="package">
+      <div><span class="caption">WEIGHT</span><strong>1.80 kg</strong></div>
+      <div><span class="caption">PARCEL</span><strong>1 of 1</strong></div>
+      <div><span class="caption">ORIGIN HUB</span><strong>BER 01</strong></div>
+    </section>
+    <figure class="tracking">
+      <span class="caption">TRACKING NUMBER</span>
+      <svg class="barcode" viewBox="0 0 300 58" xmlns="http://www.w3.org/2000/svg" aria-label="Decorative sample barcode">
+        <path d="M12 0v58M17 0v58M26 0v58M33 0v58M41 0v58M49 0v58M56 0v58M65 0v58M72 0v58M81 0v58M89 0v58M95 0v58M104 0v58M112 0v58M119 0v58M128 0v58M136 0v58M144 0v58M153 0v58M161 0v58M169 0v58M176 0v58M184 0v58M193 0v58M201 0v58M210 0v58M217 0v58M226 0v58M235 0v58M243 0v58M250 0v58M259 0v58M267 0v58M276 0v58M287 0v58" stroke="#111" stroke-width="2"/>
+        <path d="M21 0v58M37 0v58M60 0v58M77 0v58M99 0v58M123 0v58M140 0v58M157 0v58M180 0v58M205 0v58M231 0v58M254 0v58M281 0v58" stroke="#111" stroke-width="4"/>
+      </svg>
+      <figcaption class="tracking-number">NP 0010 4200 91</figcaption>
+    </figure>
+    <footer class="footer"><strong>SAMPLE LABEL / NO POSTAGE</strong><span>4 × 6 IN</span></footer>
+  </article>
+</body>
+</html>`
+  },
   flight: {
     name: "flight-simulator-dashboard",
     options: { landscape: true, margin: "10mm", pageNumbers: false },
