@@ -40,3 +40,38 @@ No invoice-specific behavior is added to the engine or public API.
 
 When upgrading Krilla, review this patch and run `tests/document.test.ts`, the
 Node/browser checks, and `npm run test:pdfa` against the rebuilt WASM.
+
+# Blitz print layout patch
+
+`blitz-dom/` contains `packages/blitz-dom` from Blitz revision
+`e72650a6e67941852fddf025295cfee30c39ea32`, with its MIT/Apache-2.0 licenses.
+Its standalone manifest expands the upstream workspace dependencies and pins
+the sibling Blitz crates to the same revision.
+
+- `config.rs`, `document.rs`, `stylo_device.rs`, `iframe.rs`, `resolve.rs`, and
+  `layout/writing_mode.rs`: provide an optional fractional CSS viewport and
+  optional layout rounding. Defaults preserve the upstream window behavior.
+  The PDF body and margin templates disable rounding and supply the exact
+  printable dimensions, including after CSS page setup changes them. Layout,
+  transforms, painting, and pagination share the resulting geometry.
+- `layout/construct.rs`: use baseline alignment for the root of an inline
+  formatting context. A table cell's `vertical-align: middle` aligns the cell
+  content within its row; applying it again to its own text inflated every line.
+  Descendant inline alignment and the cell's placement remain intact.
+- `layout/inline.rs`: let empty inline contexts compute their size and margin
+  collapse normally. The empty-text shortcut prevented margins from collapsing
+  through paragraphs containing empty spans and discarded explicit heights.
+- `layout/table.rs`: keep `max-width` as an intrinsic measurement constraint,
+  while allowing the final cell layout to use the width allocated by the grid.
+  Generate anonymous row/cell wrappers around improper table children, including
+  block content in a `display: table` container. `layout/construct.rs` creates
+  the wrappers without altering the DOM; `layout/damage.rs` retains their roles
+  and inherited styles when refreshing them. Ownership tracking frees them on
+  reconstruction.
+
+When upgrading Blitz, review these changes against upstream and run
+`tests/layout.test.ts`, `tests/pagination.test.ts`, and `tests/reports.test.ts`
+against rebuilt WASM. Layout tests check physical margins, fractional viewport
+widths, header/footer geometry, table line spacing, descendant alignment, empty
+paragraphs, explicit empty-box dimensions, exact page-boundary fits, constrained
+table columns, anonymous cells, and inheritance after CSS page-size changes.
