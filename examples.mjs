@@ -136,21 +136,20 @@ export const examples = {
   },
   ticket: {
     name: "night-frequency-ticket",
-    options: { format: "A5", landscape: true, margin: "10mm", pageNumbers: false },
+    options: { format: undefined, landscape: true, margin: "0mm", pageNumbers: false, preferCSSPageSize: true },
     html: `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
   <style>
+    @page { size: 190mm 100mm; margin: 0; }
     * { box-sizing: border-box; }
-    body { margin: 0; font: 11px/1.45 sans-serif; color: #172f35; }
-    .masthead { display: flex; justify-content: space-between;
-      margin-bottom: 16px; font-size: 9px; letter-spacing: 1.5px; }
+    body { margin: 0; font: 11px/16px sans-serif; color: #172f35; }
     .ticket { display: grid; grid-template-columns: 1fr 180px;
-      border: 1px solid #c9d8d2; border-radius: 12px; overflow: hidden; }
+      width: 190mm; height: 100mm; }
     .main { background: #132e34; color: #f7fbf8; padding: 26px; }
     .eyebrow { color: #b9df91; font-size: 10px; letter-spacing: 2px; margin: 0; }
-    h1 { margin: 18px 0 6px; font-size: 39px; line-height: 1.03;
+    h1 { margin: 18px 0 6px; font-size: 39px; line-height: 40px;
       letter-spacing: -1px; }
     .subtitle { color: #b8ccc9; margin: 12px 0 16px; }
     .wave { display: block; width: 100%; height: 42px; margin-bottom: 20px; }
@@ -158,22 +157,18 @@ export const examples = {
     .label { display: block; font-size: 8px; letter-spacing: 1.4px;
       color: #8facaa; margin-bottom: 4px; }
     .value { font-size: 13px; font-weight: bold; }
-    .stub { background: #edf4e7; border-left: 2px dashed #a8bdae;
-      padding: 25px 20px; }
+    .stub { background: #edf4e7; padding: 25px 20px; }
     .pass { display: inline-block; background: #d5e8bd; padding: 5px 9px;
       font-size: 8px; letter-spacing: 1px; margin-bottom: 23px; }
     .stub .label { color: #5c7a73; }
     .guest { font-size: 17px; line-height: 1.3; margin: 7px 0 21px; }
     .seat { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .seat strong { font-size: 23px; }
+    .seat strong { font-size: 23px; line-height: 30px; }
     .barcode { display: block; width: 136px; height: 40px; margin: 25px 0 6px; }
     .serial { font: 9px monospace; }
-    .footer { display: flex; justify-content: space-between; gap: 16px;
-      margin-top: 16px; color: #708580; font-size: 9px; }
   </style>
 </head>
 <body>
-  <div class="masthead"><strong>NORTH HALL PRESENTS</strong><span>LIVE / 2026</span></div>
   <article class="ticket">
     <section class="main">
       <p class="eyebrow">ONE NIGHT. ALL FREQUENCIES.</p>
@@ -201,8 +196,6 @@ export const examples = {
       <span class="serial">NF-2026-0104</span>
     </aside>
   </article>
-  <div class="footer"><span>A5 landscape / Grid, SVG, and a detachable stub.</span>
-    <span>Sample layout - not an entry ticket.</span></div>
 </body>
 </html>`
   },
