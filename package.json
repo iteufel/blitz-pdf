@@ -1,6 +1,6 @@
 {
   "name": "blitz-pdf",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Render HTML and CSS to PDF with Blitz and WebAssembly in Node.js, Bun, and browsers.",
   "type": "module",
   "license": "MIT",
@@ -47,6 +47,7 @@
     "dist",
     "wasm",
     "src",
+    "docs",
     "examples",
     "assets/icon.svg",
     "README.md",
