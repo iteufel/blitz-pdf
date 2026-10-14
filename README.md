@@ -431,6 +431,32 @@ relaxed to make progress. A text line that cannot fit the printable height
 fails explicitly. Keep-with-next protects a heading even when the following
 paragraph spans multiple pages.
 
+Trailing `<br>` elements and preserved blank lines keep their layout height;
+the extra cursor line emitted by the text engine after a final break is not
+paginated. Overflow clips constrain line, glyph, and table-row fragmentation.
+Fully clipped glyph runs are omitted from the PDF's selectable text.
+
+Pagination failures include a code at the start of `Error.message`:
+
+- `PAGINATION_LINE_TOO_TALL`: a line exceeds the available printable height.
+- `PAGINATION_NO_PROGRESS`: no valid advancing break exists, including chains
+  of overlapping lines that individually fit the page.
+- `PAGINATION_FORCED_BREAK_INTERSECTS_LINE`: an explicit break cuts a line.
+- `PAGINATION_TABLE_GROUPS_TOO_TALL`: repeated groups leave no room for rows.
+
+These messages include the zero-based page index, document-space page top,
+available height, and, when associated with a DOM line, element tag/ID, internal
+node ID, zero-based line index and measured visible line range. Coordinates and
+heights are CSS pixels. Painted glyph runs without a DOM association and errors
+without a blocking line report those fields as `unavailable`.
+
+The pinned Blitz table layout still differs from Chromium for `td { max-width: 0 }`:
+it can constrain the cell itself to zero content width and wrap short text by
+character, while Chromium distributes the table width across the columns.
+Height-limited containers now paginate their visible content without failing,
+but this does not resolve that separate width-compatibility issue. See the
+[reproduction and investigation](docs/pagination-regressions.md).
+
 The first `<thead>` and `<tfoot>` (or elements styled as `table-header-group`
 and `table-footer-group`) repeat on every fragment of their table. Their actual
 layout, column widths, backgrounds, and selectable text are retained. Use

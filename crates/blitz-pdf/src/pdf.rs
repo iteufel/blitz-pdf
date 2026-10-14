@@ -377,6 +377,30 @@ pub(crate) fn text_bounds(run: &GlyphRunCommand) -> Option<Rect> {
     result
 }
 
+/// Conservative visible bounds shared by pagination and text emission. The
+/// actual PDF clips retain their full paths; these bounds cull hidden runs.
+#[derive(Default)]
+pub(crate) struct ClipBounds(Vec<Rect>);
+
+impl ClipBounds {
+    pub fn update(&mut self, command: &RenderCommand) {
+        let bounds = match command {
+            RenderCommand::PushLayer(layer) => (layer.transform * &layer.clip).bounding_box(),
+            RenderCommand::PushClipLayer(layer) => (layer.transform * &layer.clip).bounding_box(),
+            RenderCommand::PopLayer => {
+                self.0.pop();
+                return;
+            }
+            _ => return,
+        };
+        self.0.push(self.intersect(bounds));
+    }
+
+    pub fn intersect(&self, bounds: Rect) -> Rect {
+        self.0.last().map_or(bounds, |clip| clip.intersect(bounds))
+    }
+}
+
 fn intersects_page(shape: &BezPath, affine: Affine, top: f64, bottom: f64) -> bool {
     let bounds = affine.transform_rect_bbox(shape.bounding_box());
     // Do not replay the next fragment's border exactly on the clip edge:
@@ -513,8 +537,10 @@ fn draw_fragment(
     );
     surface.push_transform(&transform(Affine::translate((-left, -top))));
     let mut layers = Vec::new();
+    let mut clips = ClipBounds::default();
     let result = (|| -> Result<(), String> {
         for command in &scene.commands {
+            clips.update(command);
             match command {
                 RenderCommand::PushLayer(c) => {
                     if c.filter.is_some() || c.backdrop_filter.is_some() {
@@ -577,14 +603,18 @@ fn draw_fragment(
                 }
                 RenderCommand::GlyphRun(c) => {
                     if let Some(g) = c.glyphs.first() {
-                        let y = text_bounds(c).map(|r| r.y0).unwrap_or_else(|| {
+                        let bounds = text_bounds(c).map(|bounds| clips.intersect(bounds));
+                        if bounds.is_some_and(|r| r.width() <= 0.0 || r.height() <= 0.0) {
+                            continue;
+                        }
+                        let y = bounds.map(|r| r.y0).unwrap_or_else(|| {
                             (c.transform * kurbo::Point::new(f64::from(g.x), f64::from(g.y))).y
                         });
                         // Embed only text belonging to this page, preserving
                         // extraction order without duplicate clipped text.
                         if y >= top - 0.01
                             && y < bottom - 0.01
-                            && text_bounds(c).is_none_or(|r| r.x1 > left && r.x0 < right)
+                            && bounds.is_none_or(|r| r.x1 > left && r.x0 < right)
                         {
                             draw_text(surface, cache, index, c)?;
                         }
