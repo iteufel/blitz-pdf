@@ -1,6 +1,6 @@
 import { getDocument, GlobalWorkerOptions } from "./vendor/pdfjs/pdf.min.mjs";
 import { convertInWorker, MAX_HTML_BYTES, pdfFilename } from "./converter.mjs";
-import { examples } from "./examples.mjs";
+import { defaultExampleOptions, examples } from "./examples.mjs";
 
 GlobalWorkerOptions.workerSrc = new URL("./vendor/pdfjs/pdf.worker.min.mjs", import.meta.url).href;
 const $ = (id) => document.getElementById(id);
@@ -62,6 +62,17 @@ function replaceSource(html, name, example) {
   $("example").value = example;
   edited = false;
   updateEditor();
+}
+
+function loadExample(key) {
+  const example = examples[key];
+  const options = { ...defaultExampleOptions, ...example.options };
+  $("format").value = options.format;
+  $("orientation").value = options.landscape ? "landscape" : "portrait";
+  $("margin").value = options.margin;
+  $("page-numbers").checked = options.pageNumbers;
+  $("css-page").checked = options.preferCSSPageSize;
+  replaceSource(example.html, example.name, key);
 }
 
 function confirmReplacement(action, description) {
@@ -203,7 +214,7 @@ $("example").addEventListener("change", (event) => {
   const key = event.target.value;
   $("example").value = selection;
   if (!examples[key]) return;
-  confirmReplacement(() => { clearReplacement(); replaceSource(examples[key].html, examples[key].name, key); void generate(); }, "the selected example");
+  confirmReplacement(() => { clearReplacement(); loadExample(key); void generate(); }, "the selected example and its page settings");
 });
 $("replace-accept").addEventListener("click", () => { const action = pendingReplacement; clearReplacement(); action?.(); });
 $("replace-cancel").addEventListener("click", () => { clearReplacement(); editor.focus(); });
@@ -228,5 +239,5 @@ let resizeTimer;
 new ResizeObserver(() => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (pdf && $("zoom").value === "fit") void renderPage(); }, 150); }).observe(surface);
 window.addEventListener("pagehide", () => { job?.cancel(); if (pdfUrl) URL.revokeObjectURL(pdfUrl); });
 window.addEventListener("pageshow", (event) => { if (event.persisted) { invalidate(); void generate(); } });
-replaceSource(examples.hello.html, examples.hello.name, "hello");
+loadExample("hello");
 void generate();

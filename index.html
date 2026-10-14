@@ -34,7 +34,14 @@
 
       <div class="workspace">
         <section class="panel editor-panel" aria-labelledby="source-title">
-          <div class="panel-heading"><h2 id="source-title"><span class="panel-icon" aria-hidden="true">&lt;/&gt;</span> HTML source</h2><div class="panel-actions"><label class="sr-only" for="example">Load an example</label><select id="example"><option value="" disabled>Custom document</option><option value="hello">Hello world</option><option value="invoice">Invoice</option><option value="report">Two-page report</option><option value="blank">Blank document</option></select><button class="text-button" id="upload" type="button"><span aria-hidden="true">↑</span> Upload HTML</button><input id="file" type="file" accept=".html,.htm,text/html" hidden></div></div>
+          <div class="panel-heading"><h2 id="source-title"><span class="panel-icon" aria-hidden="true">&lt;/&gt;</span> HTML source</h2><div class="panel-actions"><label class="sr-only" for="example">Load an example</label>
+            <select id="example" title="Load sample HTML and its recommended page settings">
+              <option value="" disabled>Custom document</option>
+              <optgroup label="Documents"><option value="hello">Hello world</option><option value="invoice">Invoice</option><option value="report">Two-page report</option><option value="blank">Blank document</option></optgroup>
+              <optgroup label="Tickets"><option value="ticket">Event ticket</option></optgroup>
+              <optgroup label="Simulations"><option value="flight">Flight simulator</option><option value="energy">Energy simulation</option></optgroup>
+            </select>
+            <button class="text-button" id="upload" type="button"><span aria-hidden="true">↑</span> Upload HTML</button><input id="file" type="file" accept=".html,.htm,text/html" hidden></div></div>
           <div class="editor-wrap" id="dropzone"><div class="line-numbers" id="lines" aria-hidden="true">1</div><label for="html" class="sr-only">HTML and CSS source code</label><textarea id="html" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" placeholder="Paste your HTML and CSS here…" aria-describedby="source-help"></textarea><div class="drop-overlay" aria-hidden="true">Drop your HTML file here</div></div>
           <div class="panel-footer"><span><span class="code-dot"></span> HTML + CSS</span><span id="source-size">0 characters</span></div>
         </section>
