@@ -182,6 +182,7 @@ dependencies = [
  "blitz-html",
  "blitz-paint",
  "blitz-traits",
+ "cssparser",
  "data-url",
  "image",
  "js-sys",
@@ -194,6 +195,7 @@ dependencies = [
  "serde_bytes",
  "skrifa 0.44.0",
  "stylo",
+ "stylo_traits",
  "wasm-bindgen",
 ]
 
@@ -957,8 +959,6 @@ dependencies = [
 [[package]]
 name = "krilla"
 version = "0.8.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "27da593198b20eeba65caeb73c2bbeec3e53ab08fa549898312ce81c4fce5e33"
 dependencies = [
  "base64 0.22.1",
  "bumpalo",

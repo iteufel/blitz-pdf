@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { createApi } from "./api.js";
 
-export type { AssetData, AssetMap, AssetResolver, BinaryData, InitOptions, Length, PageFormat, PageNumberOptions, PdfOptions, WasmSource } from "./types.js";
+export type { AssetData, AssetMap, AssetResolver, AttachmentRelationship, BinaryData, InitOptions, Length, PageFormat, PageNumberOptions, PdfAttachment, PdfDate, PdfMetadata, PdfOptions, PdfXmpProperty, PdfXmpSchema, WasmSource } from "./types.js";
 export const { init, renderPdf, getEngineVersion } = createApi(
   () => readFile(new URL("../wasm/blitz_pdf_bg.wasm", import.meta.url)),
   async source => {

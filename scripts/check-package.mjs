@@ -12,6 +12,12 @@ if (new TextDecoder().decode(pdf.subarray(0, 5)) !== "%PDF-") throw new Error("P
 const requests = [];
 const dynamic = await renderPdf('<link rel="stylesheet" href="test.css"><p>Dynamic asset verification</p>', {
   assets: async url => { requests.push(url); return "p{color:blue}"; },
+  attachments: [{ name: "data.xml", data: "<data/>", mimeType: "text/xml", relationship: "Data" }],
+  metadata: { author: "Package verification", xmp: [{
+    name: "Package metadata", prefix: "test", namespaceUri: "urn:example:package:1.0#",
+    properties: [{ name: "Build", value: "verified", description: "Package build status" }],
+  }] },
 });
 if (new TextDecoder().decode(dynamic.subarray(0, 5)) !== "%PDF-" || requests.length !== 1) throw new Error("Package async asset smoke test failed");
-console.log("Package artifacts, rendering, and async assets verified.");
+if (!new TextDecoder().decode(dynamic).includes("<test:Build>verified</test:Build>")) throw new Error("Package custom XMP smoke test failed");
+console.log("Package artifacts, rendering, async assets, attachments, and custom XMP verified.");

@@ -15,8 +15,10 @@ The resolved dependency inventory and upstream license notices are in
 Upstream sources are available at the repository links in that inventory and
 through crates.io. Stylo 0.22.0 is patched to expose paged-media CSS properties
 in its Servo build. Its full modified MPL-2.0 source and license are included in
-`vendor/stylo`; `vendor/README.md` lists the changes. Other dependencies are used
-without source modifications.
+`vendor/stylo`. Krilla 0.8.2 is patched for custom XMP extension schemas and
+independent modification dates; its source and MIT/Apache-2.0 licenses are in
+`vendor/krilla`. `vendor/README.md` lists both patches. Other dependencies are
+used without source modifications.
 
 Bundled DejaVu fonts use the Bitstream Vera / DejaVu license reproduced in
 `licenses/DejaVu.txt`. The regular WOFF2 comes from Blitz's

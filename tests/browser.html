@@ -16,9 +16,16 @@
   try {
     await Promise.all([init(), init()]);
     const requests = [];
-    const bytes = await renderPdf(`<link rel="stylesheet" href="main.css"><h1>Blitz PDF in the browser</h1><div class="box">Selectable text: café, office, affinity.<p><b>Bold</b> and <i>italic</i> stay as text.</p></div><p class="hidden">Must be hidden</p><p class="second">Second page from CSS</p>`, {
-      width: "160mm", height: "100mm", title: "Browser verification",
+    const bytes = await renderPdf(`<style>@page{size:160mm 100mm;margin:6mm}</style><link rel="stylesheet" href="main.css"><h1>Blitz PDF in the browser</h1><div class="box">Selectable text: café, office, affinity.<p><b>Bold</b> and <i>italic</i> stay as text.</p></div><p class="hidden">Must be hidden</p><p class="second">Second page from CSS</p>`, {
+      width: "300mm", height: "300mm", preferCSSPageSize: true, title: "Browser verification",
+      headerTemplate: '<div style="font:10px/14px sans-serif">Report <span class="pageNumber"></span> of <span class="totalPages"></span></div>',
+      footerTemplate: '<div style="font:10px/14px sans-serif">Browser footer</div>',
       pageNumbers: { template: "Seite {page} von {pages}", fontSize: "8pt" },
+      metadata: { author: "Browser app", language: "de-DE", xmp: [{
+        name: "Test metadata", prefix: "test", namespaceUri: "urn:example:test:1.0#",
+        properties: [{ name: "Runtime", value: "Browser", description: "Generating runtime" }],
+      }] },
+      attachments: [{ name: "notes.txt", data: "café & €", mimeType: "text/plain", relationship: "Supplement" }, { name: "data.xml", data: "<data/>", mimeType: "text/xml" }],
       baseUrl: new URL("/tests/fixtures/dynamic/", location.href).href,
       assets: async url => {
         requests.push(url);
@@ -34,12 +41,20 @@
     if (parsed.numPages !== 2) throw new Error("Browser CSS page break failed");
     const {metadata} = await parsed.getMetadata();
     if (metadata.get("pdfaid:part") !== "3" || metadata.get("pdfaid:conformance") !== "U") throw new Error("Missing browser PDF/A-3u metadata");
+    if (metadata.get("test:runtime") !== "Browser" || metadata.get("dc:creator")[0] !== "Browser app") throw new Error("Browser metadata failed");
+    const attachments = await parsed.getAttachments();
+    if (attachments.size !== 2 || ![...attachments.values()].some(file => file.filename === "data.xml")) throw new Error("Browser attachment missing");
+    const notesId = [...attachments.entries()].find(([, file]) => file.filename === "notes.txt")[0];
+    if (new TextDecoder().decode(await parsed.getAttachmentContent(notesId)) !== "café & €") throw new Error("Browser attachment content changed");
     const text = (await (await parsed.getPage(1)).getTextContent()).items.map(item=>item.str ?? "").join(" ").replace(/\s+/g, " ").trim();
     if (!text.includes("Selectable text: café, office, affinity.")) throw new Error("Browser PDF text extraction failed: " + text);
     if (text.includes("Must be hidden")) throw new Error("Imported CSS was not applied");
     const second = (await (await parsed.getPage(2)).getTextContent()).items.map(item=>item.str ?? "").join(" ").replace(/\s+/g, " ").trim();
     if (!second.includes("Second page from CSS") || text.includes("Second page from CSS")) throw new Error("Text on wrong page");
     if (!text.includes("Seite 1 von 2") || !second.includes("Seite 2 von 2")) throw new Error("Browser page numbering failed");
+    if (!text.includes("Report 1 of 2") || !second.includes("Report 2 of 2") || !second.includes("Browser footer")) throw new Error("Browser margin templates failed");
+    const view = (await parsed.getPage(1)).view;
+    if (Math.abs(view[2] - 160*72/25.4) > 0.001 || Math.abs(view[3] - 100*72/25.4) > 0.001) throw new Error("Browser CSS page size failed");
     await task.destroy();
     const workerResult = await new Promise((resolve, reject) => {
       const worker = new Worker("/tests/browser-worker.mjs", {type:"module"});
@@ -47,6 +62,21 @@
       worker.onerror = error => { worker.terminate(); reject(error); };
       worker.postMessage("render");
     });
+    const workerTask = getDocument({ data: workerResult.pdf });
+    try {
+      const workerPdf = await workerTask.promise;
+      const { metadata } = await workerPdf.getMetadata();
+      if (metadata.get("test:runtime") !== "Worker" || metadata.get("dc:creator")[0] !== "Worker app") throw new Error("Worker metadata failed");
+      const workerText = (await (await workerPdf.getPage(2)).getTextContent()).items.map(item=>item.str ?? "").join(" ").replace(/\s+/g," ");
+      if (!workerText.includes("Worker report 2 of 2")) throw new Error("Worker HTML template failed");
+      const view = (await workerPdf.getPage(1)).view;
+      if (Math.abs(view[2] - 160*72/25.4) > 0.001) throw new Error("Worker CSS page size failed");
+      const files = await workerPdf.getAttachments();
+      if (files.size !== 2 || ![...files.values()].some(file => file.filename === "data.xml")) throw new Error("Worker attachment missing");
+      const binaryId = [...files.entries()].find(([, file]) => file.filename === "worker.bin")[0];
+      if (String(await workerPdf.getAttachmentContent(binaryId)) !== "0,128,255") throw new Error("Worker attachment content changed");
+    } finally { await workerTask.destroy(); }
+    delete workerResult.pdf;
     const url = URL.createObjectURL(new Blob([bytes], {type:"application/pdf"}));
     const link = document.querySelector("#download"); link.href = url; link.hidden = false;
     const frame = document.querySelector("#pdf"); frame.src = url; frame.hidden = false;

@@ -80,13 +80,17 @@ cross-origin isolation are not required.
 
 | Option | Default | Meaning |
 | --- | --- | --- |
-| `format` | `"A4"` | `A3`, `A4`, `A5`, `Letter`, `Legal`, or `Tabloid` |
+| `format` | `"A4"` | `A0`–`A6`, `Letter`, `Legal`, `Tabloid`, or `Ledger` |
 | `width`, `height` | From format | Supply both for custom dimensions; omit `format` |
 | `landscape` | `false` | Swap width and height |
+| `preferCSSPageSize` | `false` | Let CSS `@page size` override an explicit format or dimensions |
 | `margin` | `0` | One length or `{ top, right, bottom, left }`; omitted sides are zero |
 | `media` | `"print"` | CSS media queries: `print` or `screen` |
-| `title` | Unset | PDF metadata title |
+| `title` | Unset | PDF metadata title; `metadata.title` takes precedence |
+| `metadata` | `{}` | Author, subject, keywords, dates, language, document ID, and custom XMP schemas |
+| `attachments` | `[]` | Direct embedded files with MIME types and PDF/A relationships |
 | `pageNumbers` | `false` | `true` or `{ template, align, fontSize }` for an automatic text footer |
+| `headerTemplate` / `footerTemplate` | Unset | HTML repeated in the top/bottom page margin, with `.pageNumber` and `.totalPages` placeholders |
 | `baseUrl` | `https://blitz-pdf.invalid/` | Resolve relative asset URLs |
 | `assets` | `{}` | Resource map or `(url) => data / Promise<data>`; data is a UTF-8 string, `Uint8Array`, or `ArrayBuffer` |
 | `fonts` | `[]` | Additional static TTF, OTF, WOFF, or WOFF2 font bytes |
@@ -96,6 +100,203 @@ Lengths accept numbers in CSS pixels (96 px = 1 inch), or strings with `px`,
 `pt`, `mm`, `cm`, or `in`. PDF dimensions use 72 points per inch. Page dimensions
 are limited to 19200 CSS pixels; margins must leave printable content.
 `getEngineVersion()` returns the package version and pinned Blitz revision.
+
+## CSS page settings
+
+Unqualified `@page` rules support `size`, `margin`, and the four individual
+margin properties. For example, this label uses a 105 mm by 148 mm page:
+
+```js
+const pdf = await renderPdf(`
+  <style>
+    @page { size: 105mm 148mm; margin: 5mm; margin-bottom: 8mm; }
+    html, body { margin: 0; }
+  </style>
+  <h1>Shipping label</h1>
+`);
+```
+
+`size: A4 landscape`, `size: landscape`, square sizes such as `size: 100mm`,
+and absolute length calculations are supported. Rules follow stylesheet and
+`@import` order, honor `!important`, and use the selected `print`/`screen` media.
+CSS page margins override the corresponding option margins; unspecified sides
+keep their option values. Percentages resolve against the corresponding page
+dimension. Margins must be non-negative and leave printable content.
+
+CSS size is used automatically when neither `format` nor `width`/`height` is
+provided. Explicit dimensions take precedence by default. Set
+`preferCSSPageSize: true` to let CSS size override them. `size: auto` keeps the
+option size, or A4 when no size was supplied. Content is laid out again at the
+chosen dimensions; it is not scaled from an A4 layout.
+
+Named formats are `A0`, `A1`, `A2`, `A3`, `A4`, `A5`, `A6`, `Letter`, `Legal`,
+`Tabloid` (11 by 17 inches), and `Ledger` (17 by 11 inches). `landscape: true`
+swaps the option dimensions. An explicit CSS orientation takes precedence when
+CSS controls the size.
+
+The page geometry is uniform throughout a document. Named pages, `:first`,
+`:left`/`:right` page selectors, CSS page margin boxes, cascade layers, and
+custom-property substitution inside `@page` are not implemented.
+
+## Document metadata
+
+```js
+const pdf = await renderPdf(html, {
+  metadata: {
+    title: "Project report",
+    author: ["Ada Example", "Example GmbH"], // A single string also works.
+    subject: "Project delivery and supporting documents",
+    keywords: ["project", "delivery"],
+    creator: "My application",
+    language: "de-DE",
+    creationDate: "2026-10-13T10:00:00+02:00",
+    modificationDate: new Date("2026-10-14T08:00:00Z"),
+    documentId: "project-42-report", // Stable identity across revisions.
+  },
+});
+```
+
+Standard metadata is synchronized between the PDF information dictionary and
+XMP. `language` also sets the document catalog's language. `producer` defaults
+to `blitz-pdf` and its version and can be overridden. Creation time defaults to
+the start of the render; modification time defaults to creation time and must
+not precede it. Dates accept a valid `Date` or a timestamp with an explicit
+timezone, with at most three fractional-second digits. They are stored in UTC
+at whole-second precision. `documentId` is a stable input from which the engine
+derives the PDF document ID; it is not copied literally into the ID field.
+
+The original top-level `title` option remains supported. `metadata.title`
+overrides it, including an empty string to omit the title. Metadata strings must
+contain valid XML characters and fit in 16 KiB of UTF-8 per field. Author and
+keyword lists allow up to 256 entries and 16 KiB when joined. CR/CRLF line endings
+are normalized to LF to keep Info and XMP consistent.
+
+## Embedded files
+
+```js
+const pdf = await renderPdf(html, {
+  attachments: [
+    {
+      name: "data.xml",
+      data: xmlString, // UTF-8 text, Uint8Array/Buffer, or ArrayBuffer.
+      mimeType: "text/xml",
+      description: "Structured document data",
+      relationship: "Alternative",
+    },
+    {
+      name: "supporting-data.csv",
+      data: "item,quantity\nExample,2\n",
+      mimeType: "text/csv",
+      relationship: "Supplement",
+    },
+  ],
+});
+```
+
+Files are embedded directly, without going through the HTML asset resolver.
+`data` is the file's content, never a filename or URL to load. Use `readFile`,
+`fetch(...).arrayBuffer()`, or `File.arrayBuffer()` before calling `renderPdf`.
+The library snapshots supplied bytes and metadata before asynchronous work.
+
+Each attachment has a Unicode filename, a MIME type, an uncompressed size and
+modification date, and a document-level `/AFRelationship`. It appears both in
+the catalog's `/AF` array and in the `/EmbeddedFiles` name tree used by PDF
+viewers. `relationship` accepts `Source`, `Data`, `Alternative`, `Supplement`,
+or `Unspecified` (the default). MIME type defaults to `application/octet-stream`,
+description to the filename, and modification date to the document's modification
+date. MIME parameters such as `; charset=utf-8` are not accepted. Set
+`compress: true` or `false` to control compression; by default the engine chooses.
+
+Up to 100 files and 64 MiB of combined attachment contents are allowed, separately
+from HTML asset limits. Filenames must be at most 255 UTF-8 bytes, without
+directories, colons, or control characters. Duplicate filenames, including
+Unicode normalization equivalents, are rejected. Zero-byte files are supported.
+Attachment contents are preserved without interpreting or validating their format.
+
+## Custom XMP schemas
+
+`metadata.xmp` adds application-specific text properties and their PDF/A extension
+schema descriptions to the existing XMP packet. Standard metadata and PDF/A
+identification remain present.
+
+```js
+const pdf = await renderPdf(html, {
+  metadata: {
+    xmp: [{
+      name: "Project metadata",
+      namespaceUri: "urn:example:project:1.0#",
+      prefix: "project",
+      properties: [{
+        name: "ProjectId",
+        value: "PR-0042",
+        description: "Identifier of the project this document belongs to",
+        category: "external", // Default; use internal for content-derived values.
+      }],
+    }],
+  },
+});
+```
+
+Every property is declared as XMP `Text`; values and descriptions are escaped
+as XML. Schema names and property descriptions must be non-empty. Prefixes and
+property names use ASCII XML names without colons or an `xml` prefix. Namespace
+URIs must be absolute ASCII URIs with whitespace and XML delimiters percent-encoded.
+Built-in namespaces/prefixes are reserved. Duplicate prefixes, namespace URIs,
+or property names within one schema are rejected. Each schema requires at least
+one property. Limits are 32 schemas, 256 properties in total, and 1 MiB of combined
+schema text, in addition to the per-field limit. Structured XMP values and raw
+XMP packet replacement are not currently exposed.
+
+### Factur-X / ZUGFeRD example
+
+The generic attachment and XMP APIs can express Factur-X/ZUGFeRD packaging. For
+example, with matching HTML and already-validated **EN 16931** CII invoice XML:
+
+```js
+const pdf = await renderPdf(invoiceHtml, {
+  attachments: [{
+    name: "factur-x.xml", data: invoiceXml, mimeType: "text/xml",
+    description: "Invoice XML", relationship: "Alternative",
+  }],
+  metadata: {
+    title: "Invoice RE-0042", language: "de-DE",
+    xmp: [{
+      name: "Factur-X PDFA Extension Schema",
+      namespaceUri: "urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#",
+      prefix: "fx",
+      properties: [
+        { name: "DocumentFileName", value: "factur-x.xml", description: "Embedded invoice filename" },
+        { name: "DocumentType", value: "INVOICE", description: "Document type" },
+        { name: "Version", value: "1.0", description: "Schema version" },
+        { name: "ConformanceLevel", value: "EN 16931", description: "Invoice profile" },
+      ],
+    }],
+  },
+});
+```
+
+These settings follow the [PDF embedding and XMP requirements](https://www.pdflib.com/pdf-knowledge-base/zugferd-and-factur-x/)
+for Factur-X 1.x / ZUGFeRD 2.1+. The XMP `Version` is `1.0`, not the release number.
+Choose the profile and relationship for your document: `Data` for MINIMUM/BASIC WL;
+normally `Alternative` for BASIC, EN 16931, or EXTENDED. `Source` applies in the
+specified cases where the PDF is derived from XML and the recipient is outside
+Germany. The XML filename and XMP `DocumentFileName` must agree. See the
+[FeRD specification and validation artifacts](https://www.ferd-net.de/publikationen-produkte/publikationen/detailseite/zugferd-252-english)
+for the version/profile you use.
+
+The renderer does not generate invoice XML, validate XSD/Schematron rules, infer
+profiles, or check agreement between PDF and XML. Applications supply and validate
+these inputs. PDF/A conformance alone does not establish invoice conformance.
+
+The runnable example accepts your HTML, XML, and profile:
+
+```sh
+npm run example:zugferd -- invoice.html invoice.xml "EN 16931" output/pdf/invoice.pdf
+```
+
+`PdfAttachment`, `AttachmentRelationship`, `PdfMetadata`, `PdfDate`,
+`PdfXmpSchema`, and `PdfXmpProperty` are exported TypeScript types in Node/Bun
+and browser entry points.
 
 ## Resources and fonts
 
@@ -162,7 +363,7 @@ system font discovery. Fonts passed in `fonts` use their internal family names;
 use `@font-face` with an asset URL for a CSS alias. Supply fonts for scripts not
 covered by the bundled family.
 
-Input limits: 16 MiB HTML, 64 MiB supplied assets, 32 MiB supplied fonts, and 1024
+Input limits: 16 MiB HTML, 64 MiB supplied assets, 64 MiB attachments, 32 MiB supplied fonts, and 1024
 resource requests. These are practical limits, not a complete sandbox; isolate
 untrusted documents in a terminable worker with application limits.
 
@@ -207,6 +408,7 @@ vertical flow include:
   `page-break-after`, and `page-break-inside` aliases.
 - Inherited `widows` and `orphans` (positive integers; default 2).
 - Automatic protection of text lines, table rows, images, and SVG boxes.
+- Repeated table header and footer groups, with space reserved before splitting rows.
 
 ```html
 <style>
@@ -228,6 +430,18 @@ page are allowed to fragment, and impossible widow/orphan constraints are
 relaxed to make progress. A text line that cannot fit the printable height
 fails explicitly. Keep-with-next protects a heading even when the following
 paragraph spans multiple pages.
+
+The first `<thead>` and `<tfoot>` (or elements styled as `table-header-group`
+and `table-footer-group`) repeat on every fragment of their table. Their actual
+layout, column widths, backgrounds, and selectable text are retained. Use
+`display: table-row-group` to disable repetition. Headers stay with the first
+body row and footers with the last where they fit. Repetition stops when the
+table ends, and the extra space counts toward `maxPages`. Nested tables remain
+part of their containing row rather than independently repeating their groups.
+
+Pagination accounts for the subpixel difference between CSS dimensions and
+Blitz's rounded box edges, avoiding an extra page for an exactly fitting
+fractional-height label.
 
 ### Page numbers
 
@@ -255,6 +469,42 @@ intentional blanks. The footer uses embedded DejaVu Sans and the same Unicode
 shaping as body text, preserving selectable text and PDF/A-3u. It works with
 async assets in every runtime. `PageNumberOptions` is an exported TypeScript type.
 
+### Repeated HTML headers and footers
+
+```js
+const pdf = await renderPdf(reportHtml, {
+  margin: { top: "18mm", bottom: "15mm", left: "12mm", right: "12mm" },
+  headerTemplate: `
+    <div style="font: 10pt/14pt sans-serif; padding-top: 4mm">
+      <img src="logo.svg" width="24" height="24"> Quarterly report
+    </div>`,
+  footerTemplate: `
+    <div style="font: 9pt/12pt sans-serif; text-align: right">
+      Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+    </div>`,
+  assets: { "logo.svg": logoSvg },
+});
+```
+
+Templates occupy the top/bottom margins between the left and right margins,
+including on intentional blank pages. Supply enough margin height for each
+template; overflow fails with an error. Both start at the top of their margin
+band, so use CSS padding or flex layout to position their contents within it.
+Body content does not overlap those bands. `pageNumbers` can also be used; its
+automatic footer remains above the bottom margin.
+
+Each template is a separate HTML document with zero default body margin and a
+transparent background. Template-local inline styles, `<style>`, and linked
+stylesheets are supported. Body CSS does not cascade into templates. They share
+the document's asset resolver, loaded font collection, supplied fonts, base URL,
+and media type. URLs are resolved and deduplicated across the whole render,
+including async CSS, fonts, and images. Scripts are not run. Text stays selectable
+and graphics use the same vector PDF pipeline as the body.
+
+Elements with class `pageNumber` or `totalPages` have their contents replaced
+with the final page number/count before layout. Templates are limited to 1 MiB
+of HTML each. Omit a template or pass an empty string to disable it.
+
 ## German invoice example
 
 ```sh
@@ -273,7 +523,8 @@ alongside the PDF for inspection.
 
 The [example source and scope](examples/german-invoice/README.md) explain the
 fictitious data and the German invoice fields. This is a **PDF/A-3u example
-without embedded XML**, as opposed to a structured e-invoice. Its 2026 domestic
+without embedded XML**. Use the generic [attachment and XMP APIs](#factur-x--zugferd-example)
+with independently generated, matching invoice XML for a structured e-invoice. Its 2026 domestic
 B2B scenario assumes the recipient agrees to PDF delivery under the applicable
 transition rule. [§ 14 UStG](https://www.gesetze-im-internet.de/ustg_1980/__14.html),
 [§ 27(38) UStG](https://www.gesetze-im-internet.de/ustg_1980/__27.html).
@@ -284,9 +535,9 @@ transition rule. [§ 14 UStG](https://www.gesetze-im-internet.de/ustg_1980/__14.
 - Text retains shaped glyphs and Unicode cluster mappings, including ligatures.
   Unrecognized or ambiguous text runs are rejected rather than assigned guessed
   Unicode.
-- Pagination fragments one continuous vertical layout. CSS `@page`, repeated
-  table/fixed headers, nested multicolumn fragmentation, and independent
-  fragmentation of parallel flex/grid flows are not implemented. Oversized
+- Pagination fragments one continuous vertical layout. Per-page geometry,
+  repeated fixed-position body elements, nested multicolumn fragmentation, and
+  independent fragmentation of parallel flex/grid flows are not implemented. Oversized
   boxes/images may span pages; box decorations are sliced rather than cloned.
 - CSS filters, blurred shadows, non-default variable font instances, and
   repeating radial gradients are rejected. Use static font faces. There is no
@@ -318,8 +569,9 @@ the tarball; it does not publish. Install locally using
 `npm install ./blitz-pdf-<version>.tgz`.
 
 The pinned Stylo source in `vendor/stylo` enables paged-media properties in the
-Servo build; `vendor/README.md` records the small patch. Its MPL-2.0 source is
-included in the npm archive.
+Servo build. `vendor/krilla` adds custom XMP schema support and independent
+modification dates. `vendor/README.md` records both patches; the sources and
+licenses are included in the npm archive.
 
 `bun test` exercises the compiled module through its public package export. Tests
 extract Unicode with PDF.js and inspect embedded fonts, vector paths, absence

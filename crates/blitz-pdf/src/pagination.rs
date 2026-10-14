@@ -8,6 +8,7 @@ use style::values::specified::box_::{
 };
 
 const EPS: f64 = 0.01;
+pub const ROUNDING_EPS: f64 = 0.5;
 
 #[derive(Clone, Copy, Debug)]
 struct Span {
@@ -36,11 +37,13 @@ struct Paragraph {
     widows: usize,
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct PageRange {
     pub top: f64,
     pub bottom: f64,
     pub blank: bool,
+    pub offset: f64,
+    pub repeats: Vec<crate::pdf::Fragment>,
 }
 
 #[derive(Default)]
@@ -49,6 +52,8 @@ pub struct Pagination {
     avoid: Vec<Span>,
     lines: Vec<Span>,
     paragraphs: Vec<Paragraph>,
+    tables: Vec<crate::tables::Table>,
+    margins: Vec<Span>,
 }
 
 fn in_flow(node: &Node) -> bool {
@@ -107,6 +112,25 @@ impl Pagination {
             .primary_styles()
             .is_some_and(|s| s.get_inherited_box().direction == Direction::Rtl);
         result.visit(doc.root_element(), None, rtl, true);
+        crate::tables::collect(doc.root_element(), &mut result.tables);
+        for table in &result.tables {
+            result.avoid.extend(table.rows.iter().map(|row| Span {
+                top: row.y0,
+                bottom: row.y1,
+            }));
+            if let (Some(header), Some(first)) = (table.header, table.rows.first()) {
+                result.avoid.push(Span {
+                    top: header.y0,
+                    bottom: first.y1,
+                });
+            }
+            if let (Some(footer), Some(last)) = (table.footer, table.rows.last()) {
+                result.avoid.push(Span {
+                    top: last.y0,
+                    bottom: footer.y1,
+                });
+            }
+        }
         // A following break-before wins over a preceding break-after at the
         // same boundary. Collapse both into one break (no accidental blank page).
         result
@@ -215,6 +239,15 @@ impl Pagination {
             .collect();
         for (i, child) in children.iter().enumerate() {
             let next = children.get(i + 1).copied();
+            if let Some(next) = next {
+                let end = top(child) + f64::from(child.final_layout().size.height);
+                if top(next) > end + EPS {
+                    self.margins.push(Span {
+                        top: end,
+                        bottom: top(next),
+                    });
+                }
+            }
             let boundary = next.map(top).or(next_top);
             let first_child = first && i == 0 && layout.padding.top + layout.border.top == 0.0;
             self.visit(child, boundary, rtl, first_child);
@@ -242,6 +275,7 @@ impl Pagination {
         scene: &Scene,
         total_height: f64,
         height: f64,
+        rounding: f64,
         max_pages: u32,
     ) -> Result<Vec<PageRange>, String> {
         // Glyph ink may exceed its CSS line box (combining marks, transforms).
@@ -260,6 +294,18 @@ impl Pagination {
         let mut start = 0.0;
         let mut next_break = 0;
         while start < total_height - EPS || pages.is_empty() {
+            // Discard adjoining block margins at an explicit break. Otherwise
+            // a full preceding page can leave a margin-only blank page.
+            if !pages.is_empty()
+                && let Some(point) = self.forced.get(next_break)
+                && point.y > start + EPS
+                && self
+                    .margins
+                    .iter()
+                    .any(|m| m.top <= start + EPS && m.bottom >= point.y - EPS)
+            {
+                start = point.y;
+            }
             while let Some(point) = self.forced.get(next_break)
                 && point.y <= start + EPS
             {
@@ -272,67 +318,120 @@ impl Pagination {
                             top: start,
                             bottom: start,
                             blank: true,
+                            offset: 0.0,
+                            repeats: Vec::new(),
                         },
                         max_pages,
                     )?;
                 }
                 next_break += 1;
             }
-            let limit = (start + height).min(total_height.max(1.0));
-            let forced = self
-                .forced
-                .get(next_break)
-                .filter(|b| b.y <= limit + EPS && b.y < total_height - EPS);
-            let mut end = forced.map_or(limit, |b| b.y);
-            loop {
-                let mut earlier = end;
-                for line in &self.lines {
-                    if line.crosses(end) {
-                        earlier = earlier.min(line.top);
-                    }
+            let header = self
+                .tables
+                .iter()
+                .find(|t| start >= t.body_top - EPS && start < t.body_bottom - EPS)
+                .and_then(|t| t.header);
+            let offset = header.map_or(0.0, |h| h.height());
+            let mut available = height - offset;
+            let mut footer = None;
+            let end = loop {
+                if available < 1.0 {
+                    return Err(
+                        "Repeated table header and footer leave no space for table rows".into(),
+                    );
                 }
-                if forced.is_none() {
-                    for span in &self.avoid {
-                        // An oversized avoid block has to fragment; relaxing
-                        // avoidance here guarantees forward progress.
-                        if span.crosses(end)
-                            && span.bottom - span.top <= height + EPS
-                            && span.top > start + EPS
-                        {
-                            earlier = earlier.min(span.top);
+                let limit = if total_height <= start + available + rounding {
+                    total_height.max(1.0)
+                } else {
+                    start + available
+                };
+                let forced = self
+                    .forced
+                    .get(next_break)
+                    .filter(|b| b.y <= limit + EPS && b.y < total_height - EPS);
+                let mut end = forced.map_or(limit, |b| b.y);
+                loop {
+                    let mut earlier = end;
+                    for line in &self.lines {
+                        if line.crosses(end) {
+                            earlier = earlier.min(line.top);
                         }
                     }
-                    for p in &self.paragraphs {
-                        let first = p.lines.partition_point(|l| l.bottom <= start + EPS);
-                        let split = p.lines.partition_point(|l| l.bottom <= end + EPS);
-                        if split <= first || split >= p.lines.len() {
-                            continue;
+                    if forced.is_none() {
+                        for span in &self.avoid {
+                            // An oversized avoid block has to fragment; relaxing
+                            // avoidance here guarantees forward progress.
+                            if span.crosses(end)
+                                && span.bottom - span.top <= available + EPS
+                                && span.top > start + EPS
+                            {
+                                earlier = earlier.min(span.top);
+                            }
                         }
-                        if (split - first < p.orphans
-                            || p.lines.len() < p.orphans.saturating_add(p.widows))
-                            && p.top > start + EPS
-                        {
-                            earlier = earlier.min(p.top);
-                        } else if p.lines.len() - split < p.widows {
-                            let cut = p.lines.len().saturating_sub(p.widows);
-                            if cut > first && cut - first >= p.orphans {
-                                earlier = earlier.min(p.lines[cut].top);
-                            } else if p.top > start + EPS {
+                        for p in &self.paragraphs {
+                            let first = p.lines.partition_point(|l| l.bottom <= start + EPS);
+                            let split = p.lines.partition_point(|l| l.bottom <= end + EPS);
+                            if split <= first || split >= p.lines.len() {
+                                continue;
+                            }
+                            if (split - first < p.orphans
+                                || p.lines.len() < p.orphans.saturating_add(p.widows))
+                                && p.top > start + EPS
+                            {
                                 earlier = earlier.min(p.top);
+                            } else if p.lines.len() - split < p.widows {
+                                let cut = p.lines.len().saturating_sub(p.widows);
+                                if cut > first && cut - first >= p.orphans {
+                                    earlier = earlier.min(p.lines[cut].top);
+                                } else if p.top > start + EPS {
+                                    earlier = earlier.min(p.top);
+                                }
                             }
                         }
                     }
+                    if earlier >= end - EPS {
+                        break;
+                    }
+                    if forced.is_some() {
+                        return Err("A forced page break intersects a text line; put the break on a non-overlapping block boundary".into());
+                    }
+                    if earlier <= start + EPS {
+                        return Err("A text line is taller than the printable page; increase page height or reduce font size".into());
+                    }
+                    end = earlier;
                 }
-                if earlier >= end - EPS {
-                    break;
+                if footer.is_none() {
+                    let candidate = self
+                        .tables
+                        .iter()
+                        .find(|t| end > t.body_top + EPS && end < t.body_bottom - EPS)
+                        .and_then(|t| t.footer);
+                    if let Some(group) = candidate {
+                        footer = Some(group);
+                        available -= group.height();
+                        continue;
+                    }
                 }
-                if forced.is_some() {
-                    return Err("A forced page break intersects a text line; put the break on a non-overlapping block boundary".into());
+                if end <= start + EPS {
+                    return Err(
+                        "Repeated table groups prevent pagination from making progress".into(),
+                    );
                 }
-                if earlier <= start + EPS {
-                    return Err("A text line is taller than the printable page; increase page height or reduce font size".into());
-                }
-                end = earlier;
+                break end;
+            };
+            // If reserving the footer moved the entire table to the next page,
+            // there is no table body on this page to accompany that footer.
+            footer = footer.filter(|f| {
+                self.tables.iter().any(|t| {
+                    t.footer == Some(*f) && end > t.body_top + EPS && end < t.body_bottom - EPS
+                })
+            });
+            let mut repeats = Vec::new();
+            if let Some(h) = header {
+                repeats.push(fragment(h, 0.0));
+            }
+            if let Some(f) = footer {
+                repeats.push(fragment(f, offset + end - start));
             }
             push(
                 &mut pages,
@@ -340,6 +439,8 @@ impl Pagination {
                     top: start,
                     bottom: end,
                     blank: false,
+                    offset,
+                    repeats,
                 },
                 max_pages,
             )?;
@@ -355,4 +456,15 @@ fn push(pages: &mut Vec<PageRange>, page: PageRange, max_pages: u32) -> Result<(
     }
     pages.push(page);
     Ok(())
+}
+
+fn fragment(rect: kurbo::Rect, y: f64) -> crate::pdf::Fragment {
+    crate::pdf::Fragment {
+        left: rect.x0,
+        top: rect.y0,
+        right: rect.x1,
+        bottom: rect.y1,
+        x: rect.x0,
+        y,
+    }
 }
