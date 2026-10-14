@@ -25,12 +25,15 @@ fn cells(node: &Node) -> Option<Rect> {
     if display == Display::TableCell {
         let pos = node.absolute_position(0.0, 0.0);
         let size = node.final_layout().size;
-        return Some(Rect::new(
+        let bounds = Rect::new(
             f64::from(pos.x),
             f64::from(pos.y),
             f64::from(pos.x + size.width),
             f64::from(pos.y + size.height),
-        ));
+        );
+        let bounds =
+            crate::pagination::overflow_clip(node).map_or(bounds, |clip| bounds.intersect(clip));
+        return (bounds.width() > 0.0 && bounds.height() > 0.0).then_some(bounds);
     }
     node.children
         .iter()
