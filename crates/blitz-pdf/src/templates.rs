@@ -84,6 +84,8 @@ impl Templates {
             let document = HtmlDocument::from_html(
                 &html,
                 DocumentConfig {
+                    round_layout: false,
+                    layout_viewport: Some((options.content_width() as f32, height as f32)),
                     viewport: Some(Viewport::new(
                         options.content_width().floor() as u32,
                         height.floor() as u32,

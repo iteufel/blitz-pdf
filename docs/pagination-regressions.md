@@ -58,12 +58,10 @@ width of about 283.46 pixels, cell widths of about 141.73 pixels and a total
 height of 123 pixels. Changing `max-width` to `none` produces the same
 dimensions for these equal cell contents.
 
-Blitz's final cell layout instead has width 2 pixels (zero content width plus
+Unpatched Blitz's final cell layout instead has width 2 pixels (zero content width plus
 padding), height 78 pixels, and four 19-pixel lines for `Text`. Its table grid
 adapts cells to grid items while retaining `max_size.width`; the inline layout
-therefore receives a zero-width constraint. This confirms a browser
-compatibility difference. It does not establish a general correction to the
-CSS table-width algorithm, which remains a separate upstream task.
+therefore receives a zero-width constraint.
 
 The resulting tall table exceeds its container's height. Pagination previously
 used line and row ranges beyond the overflow clip; the document end inside a
@@ -73,8 +71,11 @@ glyph bounds with the scene's nested clips. PDF text emission uses the same
 clip bounds to omit fully hidden runs. Regression coverage includes both
 `max-width` values, nested `hidden`/`clip` containers and clipped oversized ink.
 
-The zero-width case now exports, but its column widths still differ from the
-browser. Its test deliberately does not claim that all twelve cells are visible.
+The subsequent [layout patch](layout-regressions.md) separates the intrinsic
+width constraint from the final allocated column width. The zero-width case
+now renders all twelve cells, and the test requires that content for both
+`max-width` values. This fixes the reproduction without replacing the entire
+table width algorithm.
 
 ## Diagnostic distinctions
 

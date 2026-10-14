@@ -450,12 +450,12 @@ node ID, zero-based line index and measured visible line range. Coordinates and
 heights are CSS pixels. Painted glyph runs without a DOM association and errors
 without a blocking line report those fields as `unavailable`.
 
-The pinned Blitz table layout still differs from Chromium for `td { max-width: 0 }`:
-it can constrain the cell itself to zero content width and wrap short text by
-character, while Chromium distributes the table width across the columns.
-Height-limited containers now paginate their visible content without failing,
-but this does not resolve that separate width-compatibility issue. See the
-[reproduction and investigation](docs/pagination-regressions.md).
+The local Blitz layout patch preserves fractional page geometry, corrects
+table-cell line spacing and empty-paragraph margin collapse, and stretches
+`td { max-width: 0 }` cells to the columns allocated by the table. Ordinary
+content inside `display: table` containers receives anonymous row/cell wrappers.
+See the [layout regressions](docs/layout-regressions.md) and
+[pagination investigation](docs/pagination-regressions.md).
 
 The first `<thead>` and `<tfoot>` (or elements styled as `table-header-group`
 and `table-footer-group`) repeat on every fragment of their table. Their actual

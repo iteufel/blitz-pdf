@@ -220,6 +220,8 @@ impl RenderJob {
         let document = HtmlDocument::from_html(
             html,
             DocumentConfig {
+                round_layout: false,
+                layout_viewport: Some((content_width as f32, content_height as f32)),
                 viewport: Some(Viewport::new(
                     content_width.floor() as u32,
                     content_height.floor() as u32,
@@ -287,6 +289,10 @@ impl RenderJob {
                             1.0,
                             ColorScheme::Light,
                         ));
+                        self.document.set_layout_viewport(Some((
+                            self.options.content_width() as f32,
+                            self.options.content_height() as f32,
+                        )));
                         self.stable = false;
                         continue;
                     }

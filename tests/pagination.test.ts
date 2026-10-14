@@ -49,7 +49,7 @@ test.each(["", "break-before:page"])("preserves trailing blank lines after a pag
 });
 
 test("keeps blank lines in table cells across page breaks", async () => {
-  const html = (breaks: number) => `${base}<style>td{padding:0;font:16px/20px sans-serif}table{border-collapse:collapse;border-spacing:0}</style><div style="height:80px">Intro</div><table>${Array.from({ length: 4 }, (_, i) => `<tr><td>Row${i}${"<br>".repeat(breaks)}</td><td>Cell${i}</td></tr>`).join("")}</table>`;
+  const html = (breaks: number) => `${base}<style>td{padding:0;font:16px/20px sans-serif}table{border-collapse:collapse;border-spacing:0}</style><div style="height:81px">Intro</div><table>${Array.from({ length: 4 }, (_, i) => `<tr><td>Row${i}${"<br>".repeat(breaks)}</td><td>Cell${i}</td></tr>`).join("")}</table>`;
   const result = await inspect(await renderPdf(html(2), { ...options, height: 100 }));
   const reference = await inspect(await renderPdf(html(1), { ...options, height: 100 }));
   expect(result.pages).toHaveLength(3);
@@ -62,8 +62,8 @@ test("keeps blank lines in table cells across page breaks", async () => {
     const items = pdf.pages[1].items;
     return items.find(item => item.str.startsWith("Row0"))!.transform[5] - items.find(item => item.str.startsWith("Row1"))!.transform[5];
   };
-  expect(spacing(reference)).toBeGreaterThan(0);
-  expect(spacing(result)).toBeCloseTo(spacing(reference) * 2, 1);
+  expect(spacing(reference)).toBeCloseTo(20 * 0.75, 1);
+  expect(spacing(result)).toBeCloseTo(40 * 0.75, 1);
 });
 
 test("preserves an empty line at the start of an automatic page fragment", async () => {
@@ -98,9 +98,7 @@ test.each(["0", "none"])("paginates a height-limited table with max-width:%s cel
   const result = await inspect(await renderPdf(html, { format: "A4" }));
   expect(result.pages).toHaveLength(1);
   expect(result.pages[0].text.replaceAll(/\s/g, "")).toContain("Text");
-  // The pinned Blitz layout still wraps zero-width cells by character; this
-  // checks the pagination failure, not equivalence of the table width algorithm.
-  if (maxWidth === "none") expect(result.pages[0].text.match(/Text/g)).toHaveLength(12);
+  expect(result.pages[0].text.match(/Text/g)).toHaveLength(12);
 });
 
 test.each(["hidden", "clip"])("ignores lines outside nested overflow:%s containers", async overflow => {

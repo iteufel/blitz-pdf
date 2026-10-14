@@ -38,6 +38,10 @@ stylo = { path = "vendor/stylo" }
 # Preserve PDF/A metadata while adding custom XMP and separate modification dates.
 krilla = { path = "vendor/krilla" }
 
+[patch."https://github.com/DioxusLabs/blitz"]
+# Preserve print geometry, paragraph spacing, and report table layout.
+blitz-dom = { path = "vendor/blitz-dom" }
+
 [profile.release]
 opt-level = "s"
 lto = "thin"
