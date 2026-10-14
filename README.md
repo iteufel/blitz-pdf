@@ -15,7 +15,12 @@ This is an early implementation; see the limitations below.
 
 Try the [HTML-to-PDF converter](https://iteufel.github.io/blitz-pdf/): paste or
 upload HTML, choose page size, orientation and margins, preview the generated
-pages, then download the PDF. Examples include an invoice and a two-page report.
+pages, then download the PDF. Examples include an invoice, a two-page report,
+an A5 landscape event ticket, a flight-simulator dashboard with route and
+telemetry charts, and a two-page energy-simulation report with comparison tables.
+Selecting an example also loads its recommended page size, orientation, margins,
+and page-number settings. The simulator examples are static layouts with
+illustrative data, ready to edit and export.
 
 Conversion runs in a terminable Web Worker. Documents are never uploaded or
 saved by the site. Use self-contained HTML with inline CSS and data URLs for
