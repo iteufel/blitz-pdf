@@ -15,8 +15,9 @@ This is an early implementation; see the limitations below.
 
 Try the [HTML-to-PDF converter](https://iteufel.github.io/blitz-pdf/): paste or
 upload HTML, choose page size, orientation and margins, preview the generated
-pages, then download the PDF. Examples include an invoice, a two-page report,
-an A5 landscape event ticket, a flight-simulator dashboard with route and
+pages, then download the PDF. The default example is a borderless event ticket
+on a custom 190 × 100 mm page. Other examples include an invoice, a two-page report,
+a flight-simulator dashboard with route and
 telemetry charts, and a two-page energy-simulation report with comparison tables.
 Selecting an example also loads its recommended page size, orientation, margins,
 and page-number settings. The simulator examples are static layouts with

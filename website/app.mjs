@@ -10,7 +10,7 @@ const canvas = $("pdf-canvas");
 const surface = $("preview-surface");
 let pdf, pdfTask, pdfUrl, job, renderTask;
 let revision = 0, pageNumber = 1, pageRender = 0;
-let edited = false, selection = "hello", pendingReplacement;
+let edited = false, selection = "ticket", pendingReplacement;
 
 function showError(message) {
   $("error").textContent = message;
@@ -67,12 +67,20 @@ function replaceSource(html, name, example) {
 function loadExample(key) {
   const example = examples[key];
   const options = { ...defaultExampleOptions, ...example.options };
-  $("format").value = options.format;
+  $("format").value = options.format ?? "css";
   $("orientation").value = options.landscape ? "landscape" : "portrait";
   $("margin").value = options.margin;
   $("page-numbers").checked = options.pageNumbers;
   $("css-page").checked = options.preferCSSPageSize;
+  syncPageSizeControls();
   replaceSource(example.html, example.name, key);
+}
+
+function syncPageSizeControls() {
+  const fromCSS = $("format").value === "css";
+  if (fromCSS) $("css-page").checked = true;
+  $("css-page").disabled = fromCSS;
+  $("orientation").disabled = fromCSS;
 }
 
 function confirmReplacement(action, description) {
@@ -127,7 +135,7 @@ async function generate() {
   let currentJob, loadingTask;
   try {
     currentJob = convertInWorker(editor.value, {
-      format: $("format").value,
+      format: $("format").value === "css" ? undefined : $("format").value,
       landscape: $("orientation").value === "landscape",
       margin: $("margin").value,
       pageNumbers: $("page-numbers").checked,
@@ -194,6 +202,10 @@ async function openFile(file) {
 
 $("settings").addEventListener("submit", (event) => { event.preventDefault(); void generate(); });
 $("settings").addEventListener("input", invalidate);
+$("format").addEventListener("change", () => {
+  $("css-page").checked = $("format").value === "css";
+  syncPageSizeControls();
+});
 for (const id of ["page-numbers", "css-page"]) $(id).addEventListener("change", invalidate);
 editor.addEventListener("input", () => {
   edited = true;
@@ -239,5 +251,5 @@ let resizeTimer;
 new ResizeObserver(() => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (pdf && $("zoom").value === "fit") void renderPage(); }, 150); }).observe(surface);
 window.addEventListener("pagehide", () => { job?.cancel(); if (pdfUrl) URL.revokeObjectURL(pdfUrl); });
 window.addEventListener("pageshow", (event) => { if (event.persisted) { invalidate(); void generate(); } });
-loadExample("hello");
+loadExample("ticket");
 void generate();

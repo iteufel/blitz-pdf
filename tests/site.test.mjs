@@ -22,7 +22,7 @@ test("download names cannot contain path separators or control characters", () =
 
 const expectedLayouts = {
   report: { pages: 2, size: [210, 297] },
-  ticket: { pages: 1, size: [210, 148], text: [["Alex Morgan", "NF-2026-0104"]] },
+  ticket: { pages: 1, size: [190, 100], text: [["NIGHT", "FREQUENCY", "Alex Morgan", "NF-2026-0104", "Main floor"]] },
   flight: { pages: 1, size: [297, 210], text: [["Flight telemetry", "Altitude profile", "Event log"]] },
   energy: { pages: 2, size: [210, 297], text: [["Energy balance", "Storage losses"], ["Dispatch snapshots", "Explore your own scenario."]] },
 };
