@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Turn HTML and CSS into a downloadable, searchable PDF in your browser. Free, open source, and no document uploads.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self'; connect-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' blob: data:; font-src 'self' blob: data:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta name="theme-color" content="#f6f7f9">
+    <title>blitz-pdf — HTML to PDF</title>
+    <link rel="icon" href="./icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="./styles.css">
+    <script type="module" src="./app.mjs"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="blitz-pdf home"><img src="./icon.svg" width="34" height="34" alt=""><span>blitz-pdf</span><span class="brand-label">PLAYGROUND</span></a>
+      <a class="source-link" href="https://github.com/iteufel/blitz-pdf" target="_blank" rel="noopener noreferrer">View on GitHub <span aria-hidden="true">↗</span></a>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="title">
+        <div><p class="eyebrow"><span></span> THE BROWSER IS ALL YOU NEED</p><h1 id="title">Your HTML. <span>Ready for paper.</span></h1><p class="lede">Paste your markup, make it yours, and export a crisp, searchable PDF.</p></div>
+        <div class="privacy-note"><svg width="20" height="23" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><path d="m12 2 8 3v6c0 5-8 11-8 11S4 16 4 11V5z"/><path d="m8 11 3 3 5-6"/></svg><div><strong>Your documents stay yours.</strong><span>Converted locally. Never uploaded.</span></div></div>
+      </section>
+
+      <form id="settings" class="settings" aria-label="PDF settings">
+        <label>Page size<select id="format" name="format"><option>A4</option><option>Letter</option><option>Legal</option><option>A3</option><option>A5</option><option>Tabloid</option></select></label>
+        <label>Orientation<select id="orientation" name="orientation"><option value="portrait">Portrait</option><option value="landscape">Landscape</option></select></label>
+        <label>Margins<select id="margin" name="margin"><option value="15mm">Standard · 15 mm</option><option value="10mm">Narrow · 10 mm</option><option value="25mm">Wide · 25 mm</option><option value="0mm">None</option></select></label>
+        <label class="filename-field">File name<span class="filename-input"><input id="filename" name="filename" value="hello-world" maxlength="100" autocomplete="off" aria-label="PDF file name"><span>.pdf</span></span></label>
+        <button id="convert" class="button primary" type="submit"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m13 2-9 12h7l-1 8 10-12h-7z"/></svg><span>Generate PDF</span><kbd aria-hidden="true">⌘ ↵</kbd></button>
+        <button id="cancel" class="button" type="button" hidden>Cancel</button>
+      </form>
+
+      <div class="workspace">
+        <section class="panel editor-panel" aria-labelledby="source-title">
+          <div class="panel-heading"><h2 id="source-title"><span class="panel-icon" aria-hidden="true">&lt;/&gt;</span> HTML source</h2><div class="panel-actions"><label class="sr-only" for="example">Load an example</label><select id="example"><option value="" disabled>Custom document</option><option value="hello">Hello world</option><option value="invoice">Invoice</option><option value="report">Two-page report</option><option value="blank">Blank document</option></select><button class="text-button" id="upload" type="button"><span aria-hidden="true">↑</span> Upload HTML</button><input id="file" type="file" accept=".html,.htm,text/html" hidden></div></div>
+          <div class="editor-wrap" id="dropzone"><div class="line-numbers" id="lines" aria-hidden="true">1</div><label for="html" class="sr-only">HTML and CSS source code</label><textarea id="html" spellcheck="false" autocapitalize="off" autocomplete="off" wrap="off" placeholder="Paste your HTML and CSS here…" aria-describedby="source-help"></textarea><div class="drop-overlay" aria-hidden="true">Drop your HTML file here</div></div>
+          <div class="panel-footer"><span><span class="code-dot"></span> HTML + CSS</span><span id="source-size">0 characters</span></div>
+        </section>
+
+        <section class="panel preview-panel" aria-labelledby="preview-title">
+          <div class="panel-heading"><h2 id="preview-title"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M6 2h8l4 4v16H6zM14 2v5h4M9 12h6M9 16h6"/></svg> PDF preview</h2><div class="panel-actions"><span id="preview-badge" class="badge">Getting ready</span><a id="download" class="text-button download" download="hello-world.pdf" aria-disabled="true" tabindex="-1"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M4 16v5h16v-5"/></svg> Download</a></div></div>
+          <div class="preview-surface" id="preview-surface"><div class="preview-placeholder" id="placeholder"><div class="paper-icon" aria-hidden="true"><span></span><span></span><span></span></div><strong>Your next PDF starts here</strong><span>Generate a document to see its pages.</span></div><canvas id="pdf-canvas" hidden role="img" aria-label="Preview of generated PDF"></canvas></div>
+          <div class="panel-footer preview-controls"><span id="pdf-info">No PDF generated</span><div class="pagination"><button id="previous" type="button" aria-label="Previous page" disabled>‹</button><span id="page-position">— / —</span><button id="next" type="button" aria-label="Next page" disabled>›</button></div><label class="zoom-control"><span class="sr-only">Preview zoom</span><select id="zoom"><option value="fit">Fit width</option><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option></select></label></div>
+        </section>
+      </div>
+
+      <div class="workspace-bottom"><div class="advanced"><label><input id="page-numbers" type="checkbox" checked> Page numbers</label><label><input id="css-page" type="checkbox"> Prefer CSS page size</label></div><p id="status" role="status" aria-live="polite">Preparing the converter…</p></div>
+      <div id="error" class="error" role="alert" hidden></div>
+      <div id="replace-confirm" class="replace-confirm" role="region" aria-label="Replace edited source" hidden><p id="replace-message">Replace your edited source?</p><button id="replace-accept" type="button" class="button">Replace source</button><button id="replace-cancel" type="button" class="text-button">Keep editing</button></div>
+
+      <section class="details" aria-label="About this converter"><div><span class="feature-index">01</span><h3>Text that stays text.</h3><p>Selectable, searchable text and sharp vector graphics. Ready to share or print.</p></div><div><span class="feature-index">02</span><h3>A little HTML goes a long way.</h3><p id="source-help">Include CSS in your HTML and use data URLs for images or fonts. External files are never fetched.</p></div><div><span class="feature-index">03</span><h3>Open source. Browser powered.</h3><p>No account or server needed. Powered by <a href="https://github.com/iteufel/blitz-pdf" target="_blank" rel="noopener noreferrer">blitz-pdf</a>, Blitz, and Krilla.</p></div></section>
+      <details class="limitations"><summary>A note on supported HTML &amp; CSS</summary><p>This is an early renderer, so some browser CSS may differ. JavaScript is not executed. Upload a single self-contained HTML file (up to 2 MiB); linked stylesheets, remote images, and local file references are not loaded. Documents are limited to 100 pages and 60 seconds of conversion. CSS <code>@page</code> margins override the margin setting; enable “Prefer CSS page size” to use CSS page dimensions too. Source code is kept in memory; this site does not save it.</p><p><a href="https://github.com/iteufel/blitz-pdf#readme" target="_blank" rel="noopener noreferrer">Read the renderer documentation ↗</a></p></details>
+      <noscript><p class="error">Enable JavaScript to use this browser-based HTML-to-PDF converter.</p></noscript>
+    </main>
+    <footer class="site-footer"><span>blitz-pdf <span class="footer-dot">/</span> Small markup. Good documents.</span><span>Free &amp; open source <span aria-hidden="true">↗</span></span></footer>
+  </body>
+</html>
