@@ -1,12 +1,11 @@
-import { readFile } from "node:fs/promises";
 import { createApi } from "./api.js";
 
-export type { AssetData, AssetMap, AssetResolver, AttachmentRelationship, BinaryData, InitOptions, Length, PageFormat, PageNumberOptions, PdfAttachment, PdfDate, PdfMetadata, PdfOptions, PdfXmpProperty, PdfXmpSchema, WasmSource } from "./types.js";
-export const { init, renderPdf, getEngineVersion } = createApi(
-  () => readFile(new URL("../wasm/blitz_pdf_bg.wasm", import.meta.url)),
-  async source => {
-    if (source instanceof URL && source.protocol === "file:") return readFile(source);
-    if (typeof source === "string" && source.startsWith("file:")) return readFile(new URL(source));
-    return source;
+export type { AssetData, AssetMap, AssetResolver, AttachmentRelationship, Backend, BinaryData, InitOptions, Length, PageFormat, PageNumberOptions, PdfAttachment, PdfDate, PdfMetadata, PdfOptions, PdfXmpProperty, PdfXmpSchema, WasmSource } from "./types.js";
+
+export const { init, renderPdf, getEngineVersion } = createApi({
+  defaultBackend: "wasm",
+  backends: {
+    wasm: options => import("./node-wasm.js").then(module => module.loadNodeWasm(options)),
+    native: options => import("./native-backend.js").then(module => module.loadNativeEngine(options.native)),
   },
-);
+});

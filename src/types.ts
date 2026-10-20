@@ -8,10 +8,16 @@ export type AssetMap = Record<string, AssetData>;
 /** Receives an absolute URL. Returning null/undefined rejects the render as a missing asset. */
 export type AssetResolver = (url: string) => AssetData | null | undefined | Promise<AssetData | null | undefined>;
 export type WasmSource = BinaryData | WebAssembly.Module | URL | Request | Response | string;
+/** `wasm` runs the bundled WebAssembly module. `native` runs the Node-API addon in Node.js and Bun. */
+export type Backend = "wasm" | "native";
 
 export interface InitOptions {
-  /** Override the bundled WASM location, or supply bytes/a compiled module. */
+  /** `wasm` is the default. `native` uses the Node-API addon and is available from the Node.js and Bun entry points. */
+  backend?: Backend;
+  /** Override the bundled WASM location, or supply bytes/a compiled module. Applies to the wasm backend. */
   wasm?: WasmSource;
+  /** Override the Node-API addon path. Applies to the native backend. */
+  native?: string | URL;
 }
 
 export interface PageNumberOptions {

@@ -1,7 +1,7 @@
 {
   "name": "blitz-pdf",
   "version": "0.1.4",
-  "description": "Render HTML and CSS to PDF with Blitz and WebAssembly in Node.js, Bun, and browsers.",
+  "description": "Render HTML and CSS to PDF with Blitz in Node.js, Bun, and browsers. WebAssembly by default, with an optional Node-API backend.",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -36,6 +36,18 @@
       "types": "./dist/browser.d.ts",
       "default": "./dist/browser.js"
     },
+    "./native": {
+      "bun": {
+        "types": "./dist/native.d.ts",
+        "default": "./dist/native.js"
+      },
+      "node": {
+        "types": "./dist/native.d.ts",
+        "default": "./dist/native.js"
+      },
+      "types": "./dist/native.d.ts",
+      "default": "./dist/native.js"
+    },
     "./browser": {
       "types": "./dist/browser.d.ts",
       "default": "./dist/browser.js"
@@ -46,6 +58,7 @@
   "files": [
     "dist",
     "wasm",
+    "native",
     "src",
     "docs",
     "examples",
@@ -57,12 +70,14 @@
     "vendor"
   ],
   "scripts": {
-    "build": "npm run build:wasm && npm run build:js",
+    "build": "npm run build:wasm && npm run build:native && npm run build:js",
     "build:wasm": "node scripts/build-wasm.mjs",
+    "build:native": "node scripts/build-native.mjs",
     "build:js": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "test": "bun test tests/*.test.ts",
-    "test:node": "node tests/node-smoke.mjs",
+    "test:node": "node tests/node-smoke.mjs && node tests/native-smoke.mjs",
+    "test:native": "node tests/native-smoke.mjs && bun tests/native-smoke.mjs",
     "test:bun": "bun test tests/*.test.ts",
     "test:browser": "node scripts/serve-browser.mjs",
     "test:pdfa": "node scripts/validate-pdfa.mjs",
@@ -71,6 +86,7 @@
     "prepack": "node scripts/check-package.mjs",
     "example:node": "node examples/node.mjs",
     "example:bun": "bun examples/bun.ts",
+    "example:native": "node examples/native.mjs",
     "example:pagination": "node examples/pagination.mjs",
     "example:german-invoice": "node examples/german-invoice.mjs",
     "example:zugferd": "node examples/zugferd.mjs"
@@ -81,6 +97,8 @@
     "css",
     "wasm",
     "webassembly",
+    "napi",
+    "node-addon",
     "blitz",
     "bun"
   ],

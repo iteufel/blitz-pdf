@@ -1,6 +1,9 @@
+import { spawnSync } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { platformId } from "./native-platform.mjs";
 
-for (const name of ["dist/node.js", "dist/browser.js", "dist/node.d.ts", "dist/browser.d.ts", "wasm/blitz_pdf.js", "wasm/blitz_pdf_bg.wasm", "LICENSE", "THIRD_PARTY_NOTICES.md"]) {
+for (const name of ["dist/node.js", "dist/browser.js", "dist/native.js", "dist/node.d.ts", "dist/browser.d.ts", "dist/native.d.ts", "wasm/blitz_pdf.js", "wasm/blitz_pdf_bg.wasm", `native/blitz_pdf.${platformId()}.node`, "LICENSE", "THIRD_PARTY_NOTICES.md"]) {
   try { await access(new URL(`../${name}`, import.meta.url)); }
   catch { throw new Error(`Package is incomplete: missing ${name}. Run npm run build first.`); }
 }
@@ -20,4 +23,10 @@ const dynamic = await renderPdf('<link rel="stylesheet" href="test.css"><p>Dynam
 });
 if (new TextDecoder().decode(dynamic.subarray(0, 5)) !== "%PDF-" || requests.length !== 1) throw new Error("Package async asset smoke test failed");
 if (!new TextDecoder().decode(dynamic).includes("<test:Build>verified</test:Build>")) throw new Error("Package custom XMP smoke test failed");
-console.log("Package artifacts, rendering, async assets, attachments, and custom XMP verified.");
+const native = spawnSync(process.execPath, [fileURLToPath(new URL("../tests/native-smoke.mjs", import.meta.url))], {
+  cwd: fileURLToPath(new URL("../", import.meta.url)),
+  encoding: "utf8",
+});
+if (native.error) throw native.error;
+if (native.status !== 0) throw new Error(`Native backend verification failed.\n${native.stderr}`);
+console.log("Package artifacts, wasm rendering, async assets, attachments, custom XMP, and the native backend verified.");

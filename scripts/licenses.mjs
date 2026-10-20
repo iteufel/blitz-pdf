@@ -3,7 +3,9 @@ import { createHash } from "node:crypto";
 import { readFile, readdir, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
-const metadata = JSON.parse(execFileSync("cargo", ["metadata", "--locked", "--offline", "--format-version", "1"], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
+// `--all-features` inventories both backends. The Node-API crates are optional
+// and are linked into the published native addon.
+const metadata = JSON.parse(execFileSync("cargo", ["metadata", "--locked", "--offline", "--all-features", "--format-version", "1"], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 }));
 const packages = metadata.packages.filter(pkg => pkg.name !== "blitz-pdf-wasm").sort((a,b) => `${a.name} ${a.version}`.localeCompare(`${b.name} ${b.version}`));
 let output = "Rust dependency inventory and upstream license notices\nGenerated from Cargo.lock by scripts/licenses.mjs.\n\n";
 const texts = new Map();

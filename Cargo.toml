@@ -10,6 +10,11 @@ publish = false
 path = "crates/blitz-pdf/src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
+[features]
+default = ["wasm"]
+wasm = ["dep:wasm-bindgen", "dep:js-sys", "dep:serde-wasm-bindgen"]
+napi = ["dep:napi", "dep:napi-derive", "dep:napi-build", "napi/serde-json"]
+
 [dependencies]
 blitz-dom = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false, features = ["svg", "woff"] }
 blitz-html = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false }
@@ -26,11 +31,16 @@ skrifa = "0.44"
 parley = { version = "0.12", default-features = false, features = ["std"] }
 serde = { version = "1", features = ["derive"] }
 serde_bytes = "0.11"
-serde-wasm-bindgen = "0.6"
-wasm-bindgen = "=0.2.129"
-js-sys = "0.3.106"
+serde-wasm-bindgen = { version = "0.6", optional = true }
+wasm-bindgen = { version = "=0.2.129", optional = true }
+js-sys = { version = "0.3.106", optional = true }
+napi = { version = "=3.14.2", default-features = false, features = ["napi8"], optional = true }
+napi-derive = { version = "=3.6.12", optional = true }
 style = { package = "stylo", version = "0.22.0" }
 style_traits = { package = "stylo_traits", version = "0.22.0" }
+
+[build-dependencies]
+napi-build = { version = "=2.6.0", optional = true }
 
 [patch.crates-io]
 # Enable paged-media properties in Stylo's Servo build, preserving the CSS cascade.

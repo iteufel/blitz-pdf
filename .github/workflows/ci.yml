@@ -43,6 +43,7 @@ jobs:
       - run: npm ci
       - run: cargo fmt --check
       - run: cargo clippy --locked --target wasm32-unknown-unknown -- -D warnings
+      - run: cargo clippy --locked --no-default-features --features napi -- -D warnings
       - run: npm run build
       - run: npm run setup:verapdf
       - run: npm run test:pdfa
