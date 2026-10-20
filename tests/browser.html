@@ -88,7 +88,7 @@
     for (const [i, pdfBytes] of builtIn.entries()) {
       const builtInTask = getDocument({ data: pdfBytes });
       try {
-        const builtInText = (await (await (await builtInTask.promise).getPage(1)).getTextContent()).items.map(item=>item.str ?? "").join(" ");
+        const builtInText = (await (await (await builtInTask.promise).getPage(1)).getTextContent()).items.map(item=>item.str ?? "").join(" ").replace(/\s+/g, " ");
         if (!builtInText.includes(`renderPdfInWorker ${i + 1}`)) throw new Error("renderPdfInWorker text failed: " + builtInText);
       } finally { await builtInTask.destroy(); }
     }
