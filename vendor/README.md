@@ -9,6 +9,9 @@
 - `properties/counted_unknown_properties.py`: stop classifying widows/orphans as unknown.
 - `values/specified/box.rs`: parse `avoid-page`, `recto`, and `verso` break values.
 - `stylesheets/rule_parser.rs`: enable Stylo's existing `@page` parser in Servo.
+- `properties/properties.mako.rs`: the Servo `ComputedValues` size check is 240
+  bytes on 64-bit targets. The added `page` style struct is one extra `Arc`.
+  Wasm32 does not compile this check.
 
 Upstream exposes break properties only in Gecko builds. Enabling them here lets
 Blitz's actual Stylo cascade handle selectors, inheritance, media queries, CSS
@@ -32,6 +35,8 @@ Changes are limited to:
   container as the engine's built-in schemas.
 - `src/chunk_container.rs`: include custom schemas, language, and document
   identity in the instance-ID hash, and pass schemas to XMP serialization.
+- `src/interactive/annotation.rs`: use the `f32` associated infinity constants
+  so current Rust does not warn on the deprecated `std::f32` module constants.
 
 Krilla 0.8.2 already writes associated files and embedded-file name trees. The
 patch leaves that implementation intact. The renderer validates custom schema

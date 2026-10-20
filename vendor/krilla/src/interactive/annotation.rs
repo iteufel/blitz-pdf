@@ -186,10 +186,12 @@ impl LinkAnnotation {
     pub fn new_with_quad_points(quad_points: Vec<Quadrilateral>, target: Target) -> Self {
         assert!(!quad_points.is_empty());
 
-        let mut min_x = f32::INFINITY;
-        let mut min_y = f32::INFINITY;
-        let mut max_x = f32::NEG_INFINITY;
-        let mut max_y = f32::NEG_INFINITY;
+        // `<f32>::` selects the associated constants. `f32::INFINITY` still
+        // resolves to the deprecated `std::f32` module constants.
+        let mut min_x = <f32>::INFINITY;
+        let mut min_y = <f32>::INFINITY;
+        let mut max_x = <f32>::NEG_INFINITY;
+        let mut max_y = <f32>::NEG_INFINITY;
 
         for point in quad_points.iter().flat_map(|q| q.0) {
             min_x = min_x.min(point.x);

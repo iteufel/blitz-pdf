@@ -3,11 +3,12 @@
 # blitz-pdf
 
 HTML and CSS to **vector PDF/A-3u**, powered by [Blitz](https://github.com/DioxusLabs/blitz)
-and [Krilla](https://github.com/LaurenzV/krilla), compiled to WebAssembly.
+and [Krilla](https://github.com/LaurenzV/krilla). WebAssembly is the default.
+Node.js and Bun can use the same renderer as a Node-API addon instead.
 
 Runs in **Bun, Node.js, and browsers**. Text is selectable and searchable, fonts
-are subsetted and embedded, and shapes remain vectors. No Chromium, GPU, native
-addon, or rendering service. Source images remain images.
+are subsetted and embedded, and shapes remain vectors. No Chromium, GPU, or
+rendering service. The wasm backend needs no native addon. Source images remain images.
 
 This is an early implementation; see the limitations below.
 
@@ -37,9 +38,40 @@ await (await import("node:fs/promises")).writeFile("example.pdf", pdf);
 // await Bun.write("example.pdf", pdf);
 ```
 
-The first render loads the bundled WASM automatically. The npm package includes
-JavaScript, TypeScript declarations, and the WASM containing the fonts. Consumers
-do not need Rust. The package is ESM, targeting Node.js 20+ and modern Bun.
+The first render loads the selected backend. WebAssembly is the default, so the
+bundled module loads automatically. The npm package includes JavaScript,
+TypeScript declarations, the WASM containing the fonts, and the Node-API addon
+for the platform that built the release. Consumers do not need Rust. The package
+is ESM, targeting Node.js 20+ and modern Bun.
+
+## Choosing a backend
+
+`init({ backend })` chooses the renderer before the first render. Node.js and
+Bun accept `"wasm"` (the default) and `"native"`. A process keeps that choice;
+run the other backend in a separate worker. Browsers only provide wasm.
+
+```js
+import { init, renderPdf } from "blitz-pdf";
+
+await init({ backend: "native" });
+const pdf = await renderPdf("<h1>Native addon</h1>");
+```
+
+`blitz-pdf/native` is the same API with the Node-API backend already selected.
+It still accepts `init({ backend: "wasm" })` before the first render.
+
+```js
+import { renderPdf } from "blitz-pdf/native";
+```
+
+`getEngineVersion()` reports the package version, the pinned Blitz revision, and
+the active backend (`backend/wasm` or `backend/native`).
+
+The native addon uses Node-API and works in Node.js and Bun. Official npm
+releases include the binary for the publish platform, Linux x64 with glibc.
+Other platforms use WebAssembly. From a checkout of this repository,
+`npm run build:native` writes `native/blitz_pdf.<platform>.node`. Pass that path
+as `init({ backend: "native", native: path })` when selecting a particular build.
 
 ## Browser
 
@@ -71,7 +103,7 @@ loads can be retried.
 
 Asset I/O is asynchronous. HTML layout and PDF serialization perform synchronous
 CPU work. Use a Web Worker or server worker thread when the calling thread must
-stay responsive. Each worker gets its own WASM instance. Shared memory and
+stay responsive. Each worker gets its own renderer instance. Shared memory and
 cross-origin isolation are not required.
 
 ## Options
@@ -99,7 +131,8 @@ cross-origin isolation are not required.
 Lengths accept numbers in CSS pixels (96 px = 1 inch), or strings with `px`,
 `pt`, `mm`, `cm`, or `in`. PDF dimensions use 72 points per inch. Page dimensions
 are limited to 19200 CSS pixels; margins must leave printable content.
-`getEngineVersion()` returns the package version and pinned Blitz revision.
+`getEngineVersion()` returns the package version, the pinned Blitz revision, and
+`backend/wasm` or `backend/native`.
 
 ## CSS page settings
 
@@ -586,8 +619,12 @@ bun test
 npm run test:node
 npm run example:node
 # or: bun run example:bun
+# or: npm run example:native
 npm pack
 ```
+
+`npm run build` compiles WebAssembly, the Node-API addon for this machine, and
+the TypeScript. `npm run build:native` rebuilds only the addon.
 
 The wasm-bindgen CLI version must match `Cargo.lock`. Dependencies and upstream
 commits are locked. `npm pack` verifies artifacts and renders a PDF before making
@@ -603,15 +640,15 @@ licenses are included in the npm archive.
 extract Unicode with PDF.js and inspect embedded fonts, vector paths, absence
 of page images, dimensions, pagination, assets, media queries, and error recovery.
 For browser verification, run `npm run test:browser` and open
-`http://127.0.0.1:4173`. CI builds WASM, runs Bun and Node tests, validates the
-captured PDFs with veraPDF, benchmarks, and packs an npm artifact.
+`http://127.0.0.1:4173`. CI builds WASM and the Node-API addon, runs Bun and Node
+tests, validates the captured PDFs with veraPDF, benchmarks, and packs an npm artifact.
 
 ## Publishing releases
 
 Push a tag matching the package version, such as `v0.1.1`, to start
 [Publish to npm](https://github.com/iteufel/blitz-pdf/actions/workflows/publish.yml).
 The workflow checks that the tag, npm manifests, and root Rust package versions
-agree. It then builds WASM from source, runs the Bun and Node tests, validates
+agree. It then builds WASM and the Node-API addon from source, runs the Bun and Node tests, validates
 PDF/A-3u with veraPDF, runs benchmarks, and publishes the verified archive.
 Release builds do not restore dependency or compiler caches.
 
@@ -648,11 +685,14 @@ a new version.
 
 ```sh
 bun run bench
+bun run bench --backend=native
 bun run bench --iterations=50 --warmup=5
 bun run bench --iterations=50 --warmup=5 --json > benchmark-results.json
 ```
 
-Benchmarks measure WASM initialization separately, then first-render, mean,
+`--backend` is `wasm` (the default) or `native`. Each process keeps one backend,
+so compare them by running the command twice. Benchmarks measure initialization
+separately, then first-render, mean,
 median, p95, throughput, and output size for small HTML, a styled invoice,
 100 paragraphs, matching asset-map/async-loader documents with nested CSS
 and a font, and the complete three-page German invoice with page numbers.

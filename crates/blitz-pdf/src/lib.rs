@@ -8,6 +8,11 @@ mod tables;
 mod templates;
 mod text;
 
+#[cfg(feature = "napi")]
+mod napi_api;
+#[cfg(feature = "wasm")]
+mod wasm_api;
+
 use blitz_dom::{DocumentConfig, MediaType, build_single_font_ctx, decode_font_bytes};
 use blitz_html::HtmlDocument;
 use blitz_traits::shell::{ColorScheme, Viewport};
@@ -18,7 +23,6 @@ use std::{
     collections::BTreeMap,
     sync::{Arc, atomic::Ordering},
 };
-use wasm_bindgen::prelude::*;
 
 const DEFAULT_FONT: &[u8] = include_bytes!("../../../assets/fonts/DejaVuSans.woff2");
 
@@ -65,23 +69,9 @@ impl Options {
     }
 }
 
-#[wasm_bindgen]
-pub fn render_pdf(html: &str, options: JsValue) -> Result<Vec<u8>, JsError> {
-    let mut job =
-        RenderJob::build(html, parse_options(options)?, false).map_err(|e| JsError::new(&e))?;
-    job.advance().map_err(|e| JsError::new(&e))?;
-    job.render().map_err(|e| JsError::new(&e))
-}
-
-fn parse_options(options: JsValue) -> Result<Options, JsError> {
-    serde_wasm_bindgen::from_value(options)
-        .map_err(|e| JsError::new(&format!("Invalid render options: {e}")))
-}
-
 /// A document retained across asynchronous JS resource loads. No Rust borrow or
 /// callback crosses an await; JavaScript explicitly resumes it with asset bytes.
-#[wasm_bindgen]
-pub struct RenderJob {
+struct RenderJob {
     document: HtmlDocument,
     resources: Arc<resources::Resources>,
     options: Options,
@@ -92,29 +82,6 @@ pub struct RenderJob {
     fonts: parley::FontContext,
     prepared: Option<PreparedDocument>,
     templates: Option<templates::Templates>,
-}
-
-#[wasm_bindgen]
-impl RenderJob {
-    #[wasm_bindgen(constructor)]
-    pub fn new(html: &str, options: JsValue) -> Result<RenderJob, JsError> {
-        Self::build(html, parse_options(options)?, true).map_err(|e| JsError::new(&e))
-    }
-
-    /// Advance style/layout until it needs external data, or is ready to paint.
-    pub fn pending_assets(&mut self) -> Result<Vec<String>, JsError> {
-        self.advance().map_err(|e| JsError::new(&e))
-    }
-
-    pub fn provide_asset(&mut self, url: &str, bytes: Vec<u8>) -> Result<(), JsError> {
-        self.resources
-            .provide(url, bytes)
-            .map_err(|e| JsError::new(&e))
-    }
-
-    pub fn finish(&mut self) -> Result<Vec<u8>, JsError> {
-        self.render().map_err(|e| JsError::new(&e))
-    }
 }
 
 impl Drop for RenderJob {
@@ -248,6 +215,10 @@ impl RenderJob {
             prepared: None,
             templates: None,
         })
+    }
+
+    fn provide(&mut self, url: &str, bytes: Vec<u8>) -> Result<(), String> {
+        self.resources.provide(url, bytes)
     }
 
     fn advance(&mut self) -> Result<Vec<String>, String> {
@@ -387,7 +358,6 @@ fn prepare(document: &mut HtmlDocument, o: &Options) -> Result<PreparedDocument,
     })
 }
 
-#[wasm_bindgen]
-pub fn engine_version() -> String {
+fn engine_version() -> String {
     format!("blitz-pdf/{} blitz/e72650a", env!("CARGO_PKG_VERSION"))
 }

@@ -308,20 +308,63 @@ pub(crate) fn validate(options: &crate::Options) -> Result<(), String> {
     Ok(())
 }
 
+/// UTC calendar fields for an ECMAScript time value. Both backends share this
+/// so PDF dates do not depend on the host's `Date` implementation. Unix time
+/// has no leap seconds; the calendar is proleptic Gregorian (Howard Hinnant).
 fn date(timestamp: f64) -> DateTime {
-    let value = js_sys::Date::new(&wasm_bindgen::JsValue::from_f64(timestamp));
-    DateTime::new(value.get_utc_full_year() as u16)
-        .month(value.get_utc_month() as u8 + 1)
-        .day(value.get_utc_date() as u8)
-        .hour(value.get_utc_hours() as u8)
-        .minute(value.get_utc_minutes() as u8)
-        .second(value.get_utc_seconds() as u8)
+    let millis = timestamp.trunc();
+    let millis = if millis >= i64::MAX as f64 {
+        i64::MAX
+    } else if millis <= i64::MIN as f64 {
+        i64::MIN
+    } else {
+        millis as i64
+    };
+    let seconds = millis.div_euclid(1000);
+    let days = seconds.div_euclid(86_400);
+    let sod = seconds.rem_euclid(86_400) as u32;
+    let (year, month, day) = civil_from_days(days);
+    DateTime::new(year)
+        .month(month)
+        .day(day)
+        .hour((sod / 3600) as u8)
+        .minute(((sod % 3600) / 60) as u8)
+        .second((sod % 60) as u8)
         .utc_offset_hour(0)
+}
+
+fn civil_from_days(days: i64) -> (u16, u8, u8) {
+    let z = days + 719_468;
+    let era = z.div_euclid(146_097);
+    let doe = z - era * 146_097;
+    let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
+    let year = yoe + era * 400;
+    let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
+    let mp = (5 * doy + 2) / 153;
+    let day = doy - (153 * mp + 2) / 5 + 1;
+    let month = if mp < 10 { mp + 3 } else { mp - 9 };
+    let year = if month <= 2 { year + 1 } else { year };
+    (year.clamp(0, 9999) as u16, month as u8, day as u8)
+}
+
+fn now_ms() -> f64 {
+    #[cfg(all(feature = "wasm", target_arch = "wasm32"))]
+    {
+        js_sys::Date::now()
+    }
+    #[cfg(not(all(feature = "wasm", target_arch = "wasm32")))]
+    {
+        use std::time::{SystemTime, UNIX_EPOCH};
+        match SystemTime::now().duration_since(UNIX_EPOCH) {
+            Ok(duration) => duration.as_secs_f64() * 1000.0,
+            Err(error) => -(error.duration().as_secs_f64() * 1000.0),
+        }
+    }
 }
 
 pub(crate) fn apply(pdf: &mut Document, options: &crate::Options) -> Result<(), String> {
     let input = &options.metadata;
-    let created = input.creation_date.unwrap_or_else(js_sys::Date::now);
+    let created = input.creation_date.unwrap_or_else(now_ms);
     let modified = date(input.modification_date.unwrap_or(created));
     let mut metadata = Metadata::new()
         .producer(format!("blitz-pdf {}", env!("CARGO_PKG_VERSION")))
