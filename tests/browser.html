@@ -9,7 +9,7 @@
 <a id="download" hidden download="blitz-pdf-browser.pdf">Download PDF</a>
 <iframe id="pdf" title="Generated PDF" hidden></iframe>
 <script type="module">
-  import { init, renderPdf, getEngineVersion } from "../dist/browser.js";
+  import { init, renderPdf, renderPdfInWorker, getWasmModule, getEngineVersion } from "../dist/browser.js";
   import { getDocument, GlobalWorkerOptions } from "../node_modules/pdfjs-dist/build/pdf.mjs";
   GlobalWorkerOptions.workerSrc = "../node_modules/pdfjs-dist/build/pdf.worker.mjs";
   const status = document.querySelector("#status");
@@ -77,6 +77,23 @@
       if (String(await workerPdf.getAttachmentContent(binaryId)) !== "0,128,255") throw new Error("Worker attachment content changed");
     } finally { await workerTask.destroy(); }
     delete workerResult.pdf;
+    const builtInRequests = [];
+    const module = await getWasmModule();
+    const builtInStart = performance.now();
+    const builtIn = await Promise.all([1, 2].map(n => renderPdfInWorker(`<link rel="stylesheet" href="main.css"><p class="box">renderPdfInWorker ${n}</p>`, {
+      baseUrl: new URL("/tests/fixtures/dynamic/", location.href).href,
+      assets: async url => { builtInRequests.push(url); return (await fetch(url)).arrayBuffer(); },
+    })));
+    if (await getWasmModule() !== module) throw new Error("WASM module was compiled twice");
+    for (const [i, pdfBytes] of builtIn.entries()) {
+      const builtInTask = getDocument({ data: pdfBytes });
+      try {
+        const builtInText = (await (await (await builtInTask.promise).getPage(1)).getTextContent()).items.map(item=>item.str ?? "").join(" ");
+        if (!builtInText.includes(`renderPdfInWorker ${i + 1}`)) throw new Error("renderPdfInWorker text failed: " + builtInText);
+      } finally { await builtInTask.destroy(); }
+    }
+    if (builtInRequests.length !== 6) throw new Error("renderPdfInWorker asset loading failed");
+    workerResult.renderPdfInWorker = { renders: builtIn.length, assets: builtInRequests.length, ms: Math.round(performance.now() - builtInStart) };
     const url = URL.createObjectURL(new Blob([bytes], {type:"application/pdf"}));
     const link = document.querySelector("#download"); link.href = url; link.hidden = false;
     const frame = document.querySelector("#pdf"); frame.src = url; frame.hidden = false;
