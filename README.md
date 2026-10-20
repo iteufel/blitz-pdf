@@ -685,11 +685,14 @@ a new version.
 
 ```sh
 bun run bench
+bun run bench --backend=native
 bun run bench --iterations=50 --warmup=5
 bun run bench --iterations=50 --warmup=5 --json > benchmark-results.json
 ```
 
-Benchmarks measure WASM initialization separately, then first-render, mean,
+`--backend` is `wasm` (the default) or `native`. Each process keeps one backend,
+so compare them by running the command twice. Benchmarks measure initialization
+separately, then first-render, mean,
 median, p95, throughput, and output size for small HTML, a styled invoice,
 100 paragraphs, matching asset-map/async-loader documents with nested CSS
 and a font, and the complete three-page German invoice with page numbers.
