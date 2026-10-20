@@ -27,7 +27,7 @@ jobs:
           cache: ${{ !inputs.release && 'npm' || '' }}
       - uses: oven-sh/setup-bun@v2
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.3
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
