@@ -2,7 +2,7 @@
 name = "blitz-dom"
 description = "Blitz DOM implementation"
 documentation = "https://docs.rs/blitz-dom"
-version = "0.3.0-beta.3"
+version = "0.3.0-beta.4"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/dioxuslabs/blitz"
 repository = "https://github.com/dioxuslabs/blitz"
@@ -45,9 +45,9 @@ log-phase-times = ["debug_timer/enable"]
 
 [dependencies]
 # Blitz dependencies
-blitz-traits = { version = "=0.3.0-beta.3", default-features = false, git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32" }
-stylo_taffy = { version = "=0.3.0-beta.3", default-features = false, git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", features = ["default"] }
-debug_timer = { version = "0.1.2", git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32" }
+blitz-traits = { version = "=0.3.0-beta.4", default-features = false, git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55" }
+stylo_taffy = { version = "=0.3.0-beta.4", default-features = false, git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55", features = ["default"] }
+debug_timer = { version = "0.1.2", git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55" }
 
 # Servo dependencies
 style = { version = "0.22.0", package = "stylo" }
@@ -64,7 +64,7 @@ smallvec = { version = "1" }
 thin-vec = { version = "0.2" }
 
 # DioxusLabs dependencies
-taffy = { git = "https://github.com/DioxusLabs/taffy", rev = "6c2106e3df79493d304f954dc2cd4a4a382981d3", default-features = false, features = ["std", "flexbox", "flexbox_balance", "grid", "block_layout", "content_size", "calc", "detailed_layout_info"] }
+taffy = { git = "https://github.com/DioxusLabs/taffy", rev = "4e59968eda29ceeb0bbaeb3993c8cd38baa3d0a6", default-features = false, features = ["std", "flexbox", "flexbox_balance", "grid", "block_layout", "content_size", "calc", "detailed_layout_info"] }
 anyrender = { version = "0.14.0", optional = true }
 
 # Linebender/Fontations dependencies
@@ -100,7 +100,7 @@ percent-encoding = { version = "2.3.1" }
 url = { version = "2.5.0" }
 
 # Input
-keyboard-types = { version = "0.7" }
+keyboard-types = { version = "0.8" }
 cursor-icon = { version = "1" }
 thread_local = { version = "1" }
 

@@ -49,19 +49,19 @@ bitflags 2.13.2
 License: MIT OR Apache-2.0
 Source: https://github.com/bitflags/bitflags
 
-blitz-dom 0.3.0-beta.3
+blitz-dom 0.3.0-beta.4
 License: MIT OR Apache-2.0
 Source: https://github.com/dioxuslabs/blitz
 
-blitz-html 0.3.0-beta.3
+blitz-html 0.3.0-beta.4
 License: MIT OR Apache-2.0
 Source: https://github.com/dioxuslabs/blitz
 
-blitz-paint 0.3.0-beta.3
+blitz-paint 0.3.0-beta.4
 License: MIT OR Apache-2.0
 Source: https://github.com/dioxuslabs/blitz
 
-blitz-traits 0.3.0-beta.3
+blitz-traits 0.3.0-beta.4
 License: MIT OR Apache-2.0
 Source: https://github.com/dioxuslabs/blitz
 
@@ -121,7 +121,7 @@ core_maths 0.1.1
 License: MIT
 Source: https://github.com/robertbastian/core_maths
 
-crc32fast 1.5.2
+crc32fast 1.5.3
 License: MIT OR Apache-2.0
 Source: https://github.com/srijs/rust-crc32fast
 
@@ -197,7 +197,7 @@ encoding_rs 0.8.42
 License: (Apache-2.0 OR MIT) AND BSD-3-Clause
 Source: https://github.com/hsivonen/encoding_rs
 
-equivalent 1.0.2
+equivalent 1.0.3
 License: Apache-2.0 OR MIT
 Source: https://github.com/indexmap-rs/equivalent
 
@@ -233,7 +233,7 @@ font-types 0.11.3
 License: MIT OR Apache-2.0
 Source: https://github.com/googlefonts/fontations
 
-font-types 0.12.6
+font-types 0.12.7
 License: MIT OR Apache-2.0
 Source: https://github.com/googlefonts/fontations
 
@@ -385,9 +385,9 @@ js-sys 0.3.106
 License: MIT OR Apache-2.0
 Source: https://github.com/wasm-bindgen/wasm-bindgen/tree/master/crates/js-sys
 
-keyboard-types 0.7.0
+keyboard-types 0.8.3
 License: MIT OR Apache-2.0
-Source: https://github.com/pyfisch/keyboard-types
+Source: https://github.com/rust-windowing/keyboard-types
 
 krilla 0.8.2
 License: MIT OR Apache-2.0
@@ -397,7 +397,7 @@ kurbo 0.13.1
 License: Apache-2.0 OR MIT
 Source: https://github.com/linebender/kurbo
 
-libc 0.2.190
+libc 0.2.191
 License: MIT OR Apache-2.0
 Source: https://github.com/rust-lang/libc
 
@@ -721,7 +721,7 @@ smallvec 1.16.3
 License: MIT OR Apache-2.0
 Source: https://github.com/servo/rust-smallvec
 
-smol_str 0.3.6
+smol_str 0.3.7
 License: MIT OR Apache-2.0
 Source: https://github.com/rust-lang/rust-analyzer/tree/master/lib/smol_str
 
@@ -777,7 +777,7 @@ stylo_static_prefs 0.22.0
 License: MPL-2.0
 Source: https://github.com/servo/stylo
 
-stylo_taffy 0.3.0-beta.3
+stylo_taffy 0.3.0-beta.4
 License: MIT OR Apache-2.0 OR MPL-2.0
 Source: https://github.com/dioxuslabs/blitz
 
@@ -876,10 +876,6 @@ Source: https://github.com/dtolnay/unicode-ident
 unicode-script 0.5.8
 License: MIT OR Apache-2.0
 Source: https://github.com/unicode-rs/unicode-script
-
-unicode-segmentation 1.13.3
-License: MIT OR Apache-2.0
-Source: https://github.com/unicode-rs/unicode-segmentation
 
 unicode-vo 0.1.0
 License: MIT/Apache-2.0
@@ -1263,7 +1259,7 @@ serde_bytes 0.11.19 (LICENSE-MIT)
 serde_core 1.0.229 (LICENSE-MIT)
 serde_derive 1.0.229 (LICENSE-MIT)
 servo_arc 0.5.0 (LICENSE-MIT)
-smol_str 0.3.6 (LICENSE-MIT)
+smol_str 0.3.7 (LICENSE-MIT)
 stylo_malloc_size_of 0.22.0 (LICENSE-MIT)
 syn 2.0.119 (LICENSE-MIT)
 syn 3.0.9 (LICENSE-MIT)
@@ -1361,7 +1357,7 @@ crossbeam-utils 0.8.23 (LICENSE-APACHE)
 data-url 0.3.2 (LICENSE-APACHE)
 displaydoc 0.2.7 (LICENSE-APACHE)
 either 1.19.0 (LICENSE-APACHE)
-equivalent 1.0.2 (LICENSE-APACHE)
+equivalent 1.0.3 (LICENSE-APACHE)
 euclid 0.22.14 (LICENSE-APACHE)
 fastrand 2.5.0 (LICENSE-APACHE)
 flate2 1.1.10 (LICENSE-APACHE)
@@ -1404,7 +1400,7 @@ servo_arc 0.5.0 (LICENSE-APACHE)
 simplecss 0.2.2 (LICENSE-APACHE)
 smallbitvec 2.6.1 (LICENSE-APACHE)
 smallvec 1.16.3 (LICENSE-APACHE)
-smol_str 0.3.6 (LICENSE-APACHE)
+smol_str 0.3.7 (LICENSE-APACHE)
 stable_deref_trait 1.2.1 (LICENSE-APACHE)
 string_cache 0.11.0 (LICENSE-APACHE)
 string_cache_codegen 0.11.2 (LICENSE-APACHE)
@@ -1413,7 +1409,6 @@ svgtypes 0.16.1 (LICENSE-APACHE)
 tendril 0.5.1 (LICENSE-APACHE)
 thread_local 1.1.10 (LICENSE-APACHE)
 unicode-bidi 0.3.18 (LICENSE-APACHE)
-unicode-segmentation 1.13.3 (LICENSE-APACHE)
 unicode-vo 0.1.0 (LICENSE-APACHE)
 url 2.5.8 (LICENSE-APACHE)
 version_check 0.9.5 (LICENSE-APACHE)
@@ -2016,13 +2011,13 @@ DEALINGS IN THE SOFTWARE.
 
 
 ========================================================================
-blitz-dom 0.3.0-beta.3 (LICENSE-APACHE)
-blitz-html 0.3.0-beta.3 (LICENSE-APACHE)
-blitz-paint 0.3.0-beta.3 (LICENSE-APACHE)
-blitz-traits 0.3.0-beta.3 (LICENSE-APACHE)
+blitz-dom 0.3.0-beta.4 (LICENSE-APACHE)
+blitz-html 0.3.0-beta.4 (LICENSE-APACHE)
+blitz-paint 0.3.0-beta.4 (LICENSE-APACHE)
+blitz-traits 0.3.0-beta.4 (LICENSE-APACHE)
 debug_timer 0.1.3 (LICENSE-APACHE)
 rustc-hash 2.1.3 (LICENSE-APACHE)
-stylo_taffy 0.3.0-beta.3 (LICENSE-APACHE)
+stylo_taffy 0.3.0-beta.4 (LICENSE-APACHE)
 ========================================================================
 
                               Apache License
@@ -2203,13 +2198,13 @@ TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
 END OF TERMS AND CONDITIONS
 
 ========================================================================
-blitz-dom 0.3.0-beta.3 (LICENSE-MIT)
-blitz-html 0.3.0-beta.3 (LICENSE-MIT)
-blitz-paint 0.3.0-beta.3 (LICENSE-MIT)
-blitz-traits 0.3.0-beta.3 (LICENSE-MIT)
+blitz-dom 0.3.0-beta.4 (LICENSE-MIT)
+blitz-html 0.3.0-beta.4 (LICENSE-MIT)
+blitz-paint 0.3.0-beta.4 (LICENSE-MIT)
+blitz-traits 0.3.0-beta.4 (LICENSE-MIT)
 debug_timer 0.1.3 (LICENSE-MIT)
 rustc-hash 2.1.3 (LICENSE-MIT)
-stylo_taffy 0.3.0-beta.3 (LICENSE-MIT)
+stylo_taffy 0.3.0-beta.4 (LICENSE-MIT)
 ========================================================================
 
 Permission is hereby granted, free of charge, to any
@@ -2946,7 +2941,7 @@ SOFTWARE.
 ========================================================================
 core_detect 1.0.0 (LICENSE-APACHE)
 gif 0.14.2 (LICENSE-APACHE)
-keyboard-types 0.7.0 (LICENSE-APACHE)
+keyboard-types 0.8.3 (LICENSE-APACHE)
 weezl 0.1.12 (LICENSE-APACHE)
 ========================================================================
 
@@ -3210,7 +3205,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 ========================================================================
-crc32fast 1.5.2 (LICENSE-APACHE)
+crc32fast 1.5.3 (LICENSE-APACHE)
 quick-error 2.0.1 (LICENSE-APACHE)
 ========================================================================
 
@@ -3419,7 +3414,7 @@ quick-error 2.0.1 (LICENSE-APACHE)
 
 
 ========================================================================
-crc32fast 1.5.2 (LICENSE-MIT)
+crc32fast 1.5.3 (LICENSE-MIT)
 ========================================================================
 
 MIT License
@@ -4204,7 +4199,7 @@ SOFTWARE.
 ========================================================================
 dtoa 1.0.11 (LICENSE-APACHE)
 itoa 1.0.18 (LICENSE-APACHE)
-libc 0.2.190 (LICENSE-APACHE)
+libc 0.2.191 (LICENSE-APACHE)
 parley_engine 0.12.0 (LICENSE-APACHE)
 pdf-writer 0.15.0 (LICENSE-APACHE)
 proc-macro2 1.0.107 (LICENSE-APACHE)
@@ -5095,7 +5090,7 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 ========================================================================
-equivalent 1.0.2 (LICENSE-MIT)
+equivalent 1.0.3 (LICENSE-MIT)
 ========================================================================
 
 Copyright (c) 2016--2023
@@ -5602,7 +5597,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 ========================================================================
-font-types 0.12.6 (LICENSE-APACHE)
+font-types 0.12.7 (LICENSE-APACHE)
 read-fonts 0.41.0 (LICENSE-APACHE)
 skrifa 0.44.0 (LICENSE-APACHE)
 ========================================================================
@@ -5677,7 +5672,7 @@ limitations under the License.
 
 
 ========================================================================
-font-types 0.12.6 (LICENSE-MIT)
+font-types 0.12.7 (LICENSE-MIT)
 read-fonts 0.41.0 (LICENSE-MIT)
 skrifa 0.44.0 (LICENSE-MIT)
 ========================================================================
@@ -6158,7 +6153,6 @@ DEALINGS IN THE SOFTWARE.
 ========================================================================
 heck 0.5.0 (LICENSE-MIT)
 unicode-bidi 0.3.18 (LICENSE-MIT)
-unicode-segmentation 1.13.3 (LICENSE-MIT)
 ========================================================================
 
 Copyright (c) 2015 The Rust Project Developers
@@ -6677,7 +6671,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 ========================================================================
-keyboard-types 0.7.0 (LICENSE-MIT)
+keyboard-types 0.8.3 (LICENSE-MIT)
 ========================================================================
 
 Copyright (c) 2017 Pyfisch
@@ -6760,7 +6754,7 @@ DEALINGS IN THE SOFTWARE.
 
 
 ========================================================================
-libc 0.2.190 (LICENSE-MIT)
+libc 0.2.191 (LICENSE-MIT)
 ========================================================================
 
 Copyright (c) The Rust Project Developers

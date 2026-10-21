@@ -8,7 +8,10 @@ describe("real vector PDFs through the public package export", () => {
   test("initializes once for concurrent callers", async () => {
     await Promise.all([init(), init(), init()]);
     const { version } = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
-    expect(await getEngineVersion()).toStartWith(`blitz-pdf/${version} blitz/`);
+    const cargo = await readFile(new URL("../Cargo.toml", import.meta.url), "utf8");
+    const revision = cargo.match(/^blitz-dom = .*rev = "([0-9a-f]+)"/m)?.[1];
+    expect(revision).toHaveLength(40);
+    expect(await getEngineVersion()).toBe(`blitz-pdf/${version} blitz/${revision!.slice(0, 7)}`);
   });
 
   test("embeds selectable Unicode text and fonts with no raster page", async () => {

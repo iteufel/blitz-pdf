@@ -352,5 +352,5 @@ fn prepare(document: &mut HtmlDocument, o: &Options) -> Result<PreparedDocument,
 
 #[wasm_bindgen]
 pub fn engine_version() -> String {
-    format!("blitz-pdf/{} blitz/e72650a", env!("CARGO_PKG_VERSION"))
+    format!("blitz-pdf/{} blitz/f8723f4", env!("CARGO_PKG_VERSION"))
 }
