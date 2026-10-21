@@ -11,10 +11,10 @@ path = "crates/blitz-pdf/src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-blitz-dom = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false, features = ["svg", "woff"] }
-blitz-html = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false }
-blitz-paint = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false, features = ["svg"] }
-blitz-traits = { git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32", default-features = false }
+blitz-dom = { git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55", default-features = false, features = ["svg", "woff"] }
+blitz-html = { git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55", default-features = false }
+blitz-paint = { git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55", default-features = false, features = ["svg"] }
+blitz-traits = { git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55", default-features = false }
 anyrender = "0.14"
 cssparser = "0.38"
 data-url = "0.3"

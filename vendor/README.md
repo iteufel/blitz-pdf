@@ -1,6 +1,20 @@
+# Upstream versions
+
+Checked against upstream on 2026-10-21:
+
+- Blitz DOM and paint: `0.3.0-beta.4`, revision
+  `f8723f495c7c6bfb611a923a21ed5c8e0fe95d55` from `DioxusLabs/blitz` main.
+  All sibling Blitz crates use the same revision and its Taffy pin
+  `4e59968eda29ceeb0bbaeb3993c8cd38baa3d0a6`.
+- Stylo `0.22.0`, Krilla `0.8.2`, and Fontique `0.12.0` are the latest
+  published crates.io releases. Their sources were compared with the release
+  archives to confirm that only the patches and packaging files below differ.
+
 # Stylo paged-media patch
 
-`stylo/` is the unmodified crates.io `stylo` 0.22.0 source except for:
+`stylo/` contains the crates.io `stylo` 0.22.0 source (original crate checksum
+`7a255e46af2478628c48daab3774090caabd7812b1dd3ca98801c2b9c53491ed`),
+with the following changes:
 
 - `properties/longhands.toml`: enable `break-before`, `break-after`, and
   `break-inside` and the `@page size` descriptor for Servo; add inherited
@@ -44,7 +58,7 @@ Node/browser checks, and `npm run test:pdfa` against the rebuilt WASM.
 # Blitz print layout patch
 
 `blitz-dom/` contains `packages/blitz-dom` from Blitz revision
-`e72650a6e67941852fddf025295cfee30c39ea32`, with its MIT/Apache-2.0 licenses.
+`f8723f495c7c6bfb611a923a21ed5c8e0fe95d55`, with its MIT/Apache-2.0 licenses.
 Its standalone manifest expands the upstream workspace dependencies and pins
 the sibling Blitz crates to the same revision.
 
@@ -54,11 +68,11 @@ the sibling Blitz crates to the same revision.
   The PDF body and margin templates disable rounding and supply the exact
   printable dimensions, including after CSS page setup changes them. Layout,
   transforms, painting, and pagination share the resulting geometry.
-- `layout/construct.rs`: use baseline alignment for the root of an inline
+- `layout/inline/build.rs`: use baseline alignment for the root of an inline
   formatting context. A table cell's `vertical-align: middle` aligns the cell
   content within its row; applying it again to its own text inflated every line.
   Descendant inline alignment and the cell's placement remain intact.
-- `layout/inline.rs`: let empty inline contexts compute their size and margin
+- `layout/inline/layout.rs`: let empty inline contexts compute their size and margin
   collapse normally. The empty-text shortcut prevented margins from collapsing
   through paragraphs containing empty spans and discarded explicit heights.
 - `layout/table.rs`: keep `max-width` as an intrinsic measurement constraint,
@@ -79,7 +93,7 @@ table columns, anonymous cells, and inheritance after CSS page-size changes.
 # Blitz Unicode paint notifications
 
 `blitz-paint/` contains `packages/blitz-paint` from Blitz revision
-`e72650a6e67941852fddf025295cfee30c39ea32`, with its MIT/Apache-2.0 licenses.
+`f8723f495c7c6bfb611a923a21ed5c8e0fe95d55`, with its MIT/Apache-2.0 licenses.
 Its standalone manifest expands the upstream workspace dependencies and pins
 sibling crates to the same revision.
 

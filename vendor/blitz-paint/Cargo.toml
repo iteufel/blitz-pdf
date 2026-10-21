@@ -2,7 +2,7 @@
 name = "blitz-paint"
 description = "Paint a Blitz Document using anyrender"
 documentation = "https://docs.rs/blitz-paint"
-version = "0.3.0-beta.3"
+version = "0.3.0-beta.4"
 license = "MIT OR Apache-2.0"
 homepage = "https://github.com/dioxuslabs/blitz"
 repository = "https://github.com/dioxuslabs/blitz"
@@ -26,15 +26,15 @@ scrollbars = ["blitz-dom/scrollbars"]
 # Blitz dependencies
 anyrender = { version = "0.14.0" }
 anyrender_svg = { version = "0.15.0", optional = true }
-blitz-traits = { version = "=0.3.0-beta.3", default-features = false, git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32" }
-blitz-dom = { version = "=0.3.0-beta.3", default-features = false, git = "https://github.com/DioxusLabs/blitz", rev = "e72650a6e67941852fddf025295cfee30c39ea32" }
+blitz-traits = { version = "=0.3.0-beta.4", default-features = false, git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55" }
+blitz-dom = { version = "=0.3.0-beta.4", default-features = false, git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55" }
 
 # Servo dependencies
 style = { version = "0.22.0", package = "stylo" }
 euclid = { version = "0.22" }
 
 # DioxusLabs dependencies
-taffy = { git = "https://github.com/DioxusLabs/taffy", rev = "6c2106e3df79493d304f954dc2cd4a4a382981d3", default-features = false, features = ["std", "flexbox", "flexbox_balance", "grid", "block_layout", "content_size", "calc", "detailed_layout_info"] }
+taffy = { git = "https://github.com/DioxusLabs/taffy", rev = "4e59968eda29ceeb0bbaeb3993c8cd38baa3d0a6", default-features = false, features = ["std", "flexbox", "flexbox_balance", "grid", "block_layout", "content_size", "calc", "detailed_layout_info"] }
 
 # Linebender + WGPU dependencies
 parley = { version = "0.12", default-features = false, features = ["std", "bytemuck"] }

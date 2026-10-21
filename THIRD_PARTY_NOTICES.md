@@ -4,7 +4,7 @@ blitz-pdf is an independent project, not an official Dioxus Labs package.
 
 The distributed WebAssembly module includes:
 
-- [Blitz](https://github.com/DioxusLabs/blitz), MIT OR Apache-2.0, pinned to `e72650a6e67941852fddf025295cfee30c39ea32`.
+- [Blitz](https://github.com/DioxusLabs/blitz), MIT OR Apache-2.0, pinned to `f8723f495c7c6bfb611a923a21ed5c8e0fe95d55`.
 - [Krilla](https://github.com/LaurenzV/krilla), MIT OR Apache-2.0, for PDF serialization and font subsetting.
 - [Parley](https://github.com/linebender/parley), MIT OR Apache-2.0, for text layout.
 - [Stylo](https://github.com/servo/stylo), MPL-2.0, for CSS styling.
