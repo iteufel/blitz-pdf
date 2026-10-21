@@ -413,6 +413,7 @@ pub fn render(
     ranges: &[crate::pagination::PageRange],
     options: &crate::Options,
     templates: &[Vec<crate::templates::PaintedTemplate>],
+    fonts: &parley::FontContext,
 ) -> Result<Vec<u8>, String> {
     let (width, height) = (options.width, options.height);
     let margin = &options.margin;
@@ -431,8 +432,9 @@ pub fn render(
     });
     crate::document::apply(&mut pdf, options)?;
     let mut cache = Cache::default();
-    let mut numbering = page_numbers
-        .map(|options| crate::page_numbers::PageNumbers::new(options, [width, height], margin));
+    let mut numbering = page_numbers.map(|options| {
+        crate::page_numbers::PageNumbers::new(options, [width, height], margin, fonts)
+    });
     for (page_index, range) in ranges.iter().enumerate() {
         let (top, bottom) = (range.top, range.bottom);
         let mut page = pdf.start_page_with(

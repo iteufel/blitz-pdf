@@ -1,5 +1,5 @@
 use anyrender::{Glyph, Paint, recording::GlyphRunCommand};
-use blitz_dom::{build_single_font_ctx, node::TextBrush};
+use blitz_dom::node::TextBrush;
 use krilla::surface::Surface;
 use kurbo::{Affine, Vec2};
 use parley::{Alignment, FontContext, LayoutContext, PositionedLayoutItem, StyleProperty};
@@ -66,10 +66,15 @@ pub struct PageNumbers {
 }
 
 impl PageNumbers {
-    pub fn new(options: &PageNumberOptions, [width, height]: [f64; 2], margin: &Margins) -> Self {
+    pub fn new(
+        options: &PageNumberOptions,
+        [width, height]: [f64; 2],
+        margin: &Margins,
+        fonts: &FontContext,
+    ) -> Self {
         Self {
             options: options.clone(),
-            fonts: build_single_font_ctx(crate::DEFAULT_FONT),
+            fonts: fonts.clone(),
             layout: LayoutContext::new(),
             left: margin.left,
             top: height - margin.bottom - options.font_size * 2.0,

@@ -99,3 +99,22 @@ share a shape while requiring different Unicode mappings.
 When upgrading Blitz, retain these notifications at all text-paint boundaries
 and run `tests/unicode.test.ts` (requires Poppler), the existing rendering,
 pagination, and template suites, and `npm run test:pdfa` on the rebuilt WASM.
+
+# Fontique registered-font fallback patch
+
+`fontique/` contains crates.io Fontique 0.12.0 (checksum
+`bbf1df16263783918b7da396077521f92b729ef7c429444dfcf03581f1448b77`),
+with its MIT/Apache-2.0 licenses. Changes are limited to
+`src/collection/mod.rs` and `src/collection/query.rs`:
+
+- `Collection::set_registered_fallbacks` opts a collection into automatic fallback
+  across its explicitly registered fonts. Other consumers retain upstream behavior.
+- Queries try CSS families and script/locale fallbacks first, then registered
+  families in deterministic registration order, with explicit last-resort families
+  at the end. Font attributes and actual cluster coverage still control selection.
+- Shared collection clones observe fonts registered later through CSS, including
+  margin templates and the page-number renderer. No system fonts are discovered.
+
+When upgrading Fontique, retain this behavior or use an equivalent upstream API.
+Run `tests/font-fallback.test.ts`, the full rendering suite, and the PDF/A checks
+against rebuilt WASM.

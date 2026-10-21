@@ -42,8 +42,9 @@ test("associates Unicode with painted runs when hidden nodes and flex order chan
 test("preserves Unicode independently on each page and in margin templates", async () => {
   const result = await inspectUnicode(await renderPdf('<p>fi</p><p style="break-before:page">ﬁ</p>', {
     margin: "40px",
-    headerTemplate: '<div>é</div><div>é</div>',
-    footerTemplate: '<div>ffi</div><div>ﬃ</div>',
+    // Keep the two-line templates within 40px independently of font metrics.
+    headerTemplate: '<div style="font:14px/18px sans-serif"><div>é</div><div>é</div></div>',
+    footerTemplate: '<div style="font:14px/18px sans-serif"><div>ffi</div><div>ﬃ</div></div>',
   }));
   expect(result.pages).toHaveLength(2);
   for (const [i, text] of result.unicode.entries()) {
@@ -92,7 +93,8 @@ test("preserves Unicode as a single line falls back across supplied and bundled 
   const text = "café Ελληνικά 中文 नमस्ते 한국어 😀";
   const result = await inspectUnicode(await renderPdf(`<p style="font-family:'Noto Sans CJK SC','Noto Sans Devanagari',sans-serif">${text}</p>`, { fonts }));
   expect(result.unicode).toEqual([text]);
-  expect(result.embeddedFonts).toHaveLength(3);
+  // Noto Sans and the bundled emoji fallback are separate from the two supplied fonts.
+  expect(result.embeddedFonts).toHaveLength(4);
   expect(result.images).toHaveLength(0);
 });
 

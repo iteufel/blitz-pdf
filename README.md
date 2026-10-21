@@ -386,11 +386,28 @@ limit also reject. Already-running callbacks may finish after another callback
 fails; their results are discarded. Apply fetch timeouts in your loader when
 needed. The existing asset-map API continues to work.
 
-DejaVu Sans regular, bold, italic, and bold italic are bundled; DejaVu Sans Mono
-backs `monospace`. Other generic families fall back to DejaVu Sans. There is no
+Noto Sans regular, bold, italic, and bold italic are the bundled defaults;
+Noto Sans Mono backs `monospace`. Noto Sans CJK regular and bold cover CJK text,
+including supplementary ideographs. DejaVu families remain available when
+explicitly requested. Other generic families fall back to Noto Sans. There is no
 system font discovery. Fonts passed in `fonts` use their internal family names;
-use `@font-face` with an asset URL for a CSS alias. Supply fonts for scripts not
-covered by the bundled family.
+use `@font-face` with an asset URL for a CSS alias.
+
+Missing glyphs automatically fall back to other registered fonts, including
+fonts loaded asynchronously through `@font-face`. Requested CSS families and
+script-specific fallbacks take precedence, then registered fonts are tried in
+registration order. Bundled Unifont and Unifont Upper are the last resorts for
+broader Unicode coverage; monochrome Noto Emoji covers emoji sequences. This
+works for body text, generated CSS content, headers, footers and page numbers,
+through both `renderPdf` and `renderPdfInWorker`, without editing CSS font stacks.
+
+Supply a suitable script font (such as a Noto family) for higher-quality shaping
+and typography in complex scripts; it takes precedence over Unifont. The fallback
+search is not restricted to a language or Unicode plane. Bundled font coverage
+is finite; supply additional fonts for characters they do not contain. A glyph
+must exist in at least one available font, including for custom private-use
+characters. Missing glyphs continue to fail PDF/A validation.
+No text is removed or replaced to hide a missing glyph.
 
 Input limits: 16 MiB HTML, 64 MiB supplied assets, 64 MiB attachments, 32 MiB supplied fonts, and 1024
 resource requests. These are practical limits, not a complete sandbox; isolate
@@ -552,8 +569,8 @@ fit the page width fails explicitly.
 
 The renderer reserves a footer band of `2 × fontSize + 8px` above the bottom
 margin **before pagination**. Numbers use the final page count, including
-intentional blanks. The footer uses embedded DejaVu Sans and the same Unicode
-shaping as body text, preserving selectable text and PDF/A-3u. It works with
+intentional blanks. The footer shares the document's font collection, Unicode
+fallbacks and shaping, preserving selectable text and PDF/A-3u. It works with
 async assets in every runtime. `PageNumberOptions` is an exported TypeScript type.
 
 ### Repeated HTML headers and footers

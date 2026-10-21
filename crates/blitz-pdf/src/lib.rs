@@ -1,4 +1,5 @@
 mod document;
+mod fonts;
 mod page_numbers;
 mod page_setup;
 mod pagination;
@@ -8,10 +9,9 @@ mod tables;
 mod templates;
 mod text;
 
-use blitz_dom::{DocumentConfig, MediaType, build_single_font_ctx, decode_font_bytes};
+use blitz_dom::{DocumentConfig, MediaType};
 use blitz_html::HtmlDocument;
 use blitz_traits::shell::{ColorScheme, Viewport};
-use parley::fontique::{Blob, GenericFamily};
 use serde::Deserialize;
 use serde_bytes::ByteBuf;
 use std::{
@@ -20,7 +20,7 @@ use std::{
 };
 use wasm_bindgen::prelude::*;
 
-const DEFAULT_FONT: &[u8] = include_bytes!("../../../assets/fonts/DejaVuSans.woff2");
+const DEFAULT_FONT: &[u8] = include_bytes!("../../../assets/fonts/NotoSans-Regular.woff2");
 
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -180,39 +180,7 @@ impl RenderJob {
             o.height
         };
 
-        let mut fonts = build_single_font_ctx(DEFAULT_FONT);
-        for data in [
-            include_bytes!("../../../assets/fonts/DejaVuSans-Bold.ttf").as_slice(),
-            include_bytes!("../../../assets/fonts/DejaVuSans-Oblique.ttf").as_slice(),
-            include_bytes!("../../../assets/fonts/DejaVuSans-BoldOblique.ttf").as_slice(),
-        ] {
-            fonts
-                .collection
-                .register_fonts(Blob::new(Arc::new(data.to_vec())), None);
-        }
-        let mono = fonts.collection.register_fonts(
-            Blob::new(Arc::new(
-                include_bytes!("../../../assets/fonts/DejaVuSansMono.ttf").to_vec(),
-            )),
-            None,
-        );
-        fonts
-            .collection
-            .set_generic_families(GenericFamily::Monospace, mono.iter().map(|(id, _)| *id));
-        for (index, bytes) in std::mem::take(&mut o.fonts).iter().enumerate() {
-            let bytes = decode_font_bytes(bytes).into_owned();
-            if fonts
-                .collection
-                .register_fonts(Blob::new(Arc::new(bytes)), None)
-                .is_empty()
-            {
-                return Err(format!(
-                    "Could not decode fonts[{index}]; use TTF, OTF, WOFF, or WOFF2"
-                ));
-            }
-        }
-        fonts.collection.make_shared();
-        fonts.source_cache.make_shared();
+        let fonts = fonts::build(std::mem::take(&mut o.fonts))?;
         let resources = Arc::new(resources::Resources::new(
             std::mem::take(&mut o.assets),
             dynamic,
@@ -323,6 +291,7 @@ impl RenderJob {
             &content.pages,
             &self.options,
             &self.templates.as_ref().unwrap().output,
+            &self.fonts,
         )
     }
 }

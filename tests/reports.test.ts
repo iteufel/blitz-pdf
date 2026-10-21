@@ -156,8 +156,10 @@ test("templates share fonts loaded through the body stylesheet", async () => {
 });
 
 test("CSS page margins reserve templates before body pagination", async () => {
+  // Block templates use their explicit 15px line height, independently of the
+  // body's default-font strut (Noto Sans has taller metrics than DejaVu Sans).
   const pdf = await inspect(await renderPdf(`${reset}<style>@page{size:200px 100px;margin:20px 10px}</style><p>First<br>Second<br>Third<br>Fourth</p>`, {
-    headerTemplate:'<span style="font:10px/15px sans-serif">Header</span>',footerTemplate:'<span style="font:10px/15px sans-serif">Footer</span>',
+    headerTemplate:'<div style="font:10px/15px sans-serif">Header</div>',footerTemplate:'<div style="font:10px/15px sans-serif">Footer</div>',
   }));
   expect(pdf.pages).toHaveLength(2);
   for (const page of pdf.pages) {

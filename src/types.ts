@@ -105,7 +105,8 @@ export interface PdfOptions {
   baseUrl?: string;
   /** Resource map or async loader, called once per absolute URL per render. Data URLs are handled internally. */
   assets?: AssetMap | AssetResolver;
-  /** Additional static TTF, OTF, WOFF, or WOFF2 fonts, using their internal family names. */
+  /** Additional static TTF, OTF, WOFF, or WOFF2 fonts, using their internal family names.
+   * Automatically used as fallbacks when the requested font lacks a glyph. */
   fonts?: readonly BinaryData[];
   /** PDF document title. */
   title?: string;

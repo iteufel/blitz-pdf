@@ -1,0 +1,106 @@
+[
+  {
+    "family": "Noto Sans Tamil",
+    "source": "https://raw.githubusercontent.com/notofonts/notofonts.github.io/93fac8abebe6c7fed0c5b7d2456d8fa484fa146c/fonts/NotoSansTamil/full/ttf/NotoSansTamil-Regular.ttf",
+    "sourceSha256": "0afbc221964b6048c6d771c525be474d21b288a621dce0fafedd695cc5c98e4e",
+    "sha256": "e967d7cc71373113bc7330cca8bbceee43d75499c9cfe2c77d0a163cc5c9c56c",
+    "license": "licenses/Noto-OFL.txt",
+    "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/tamil)",
+    "path": "tests/fixtures/fonts/NotoSansTamil-Regular.woff2"
+  },
+  {
+    "family": "Noto Emoji",
+    "source": "https://raw.githubusercontent.com/google/fonts/8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5/ofl/notoemoji/NotoEmoji%5Bwght%5D.ttf",
+    "sourceSha256": "de6c18832938afc99caf132b39d6a30a19bac7f2e812e28db2535b4608d27551",
+    "sha256": "12f3b7927fe6381c6fd45bf0bd635e6858348171a129145ef40dc4774790f8b5",
+    "license": "licenses/NotoEmoji-OFL.txt",
+    "copyright": "Copyright 2013 Google LLC",
+    "instance": {
+      "wght": 400
+    },
+    "path": "assets/fonts/NotoEmoji-Regular.woff2"
+  },
+  {
+    "family": "Unifont",
+    "source": "https://unifoundry.com/pub/unifont/unifont-18.0.01/font-builds/unifont-18.0.01.otf",
+    "sourceSha256": "88d0a14d4aa9a96419720b39ba5da921a59560d76d4ec7d523acc06ed85cd3c2",
+    "sha256": "b3afcc1a7d3088985b29709c9f63bb76f730dd17c506e6974cb31f8568048dc4",
+    "license": "licenses/Unifont-OFL.txt",
+    "copyright": "Copyright © 1998-2026 Roman Czyborra, Paul Hardy, Qianqian Fang, Andrew Miller, Johnnie Weaver, David Corbett, Ælla Chiana Moskopp, Rebecca Bettencourt, Ho-Seok Ee, et al.",
+    "path": "assets/fonts/unifont-18.0.01.woff2",
+    "conversion": "CFF straight-line contours converted losslessly to TrueType outlines, with reversed contour winding; WOFF2 compressed without subsetting. See scripts/build-unicode-fallbacks.py."
+  },
+  {
+    "family": "Unifont Upper",
+    "source": "https://unifoundry.com/pub/unifont/unifont-18.0.01/font-builds/unifont_upper-18.0.01.otf",
+    "sourceSha256": "472201e45a050bff4c7658208b8c73e34ebce3764b287a5a46c7774038ef9391",
+    "sha256": "6b1456aedb95104af8b384783b31c060c91d5b772e0859b057e5592913977343",
+    "license": "licenses/Unifont-OFL.txt",
+    "copyright": "Copyright © 1998-2026 Roman Czyborra, Paul Hardy, Qianqian Fang, Andrew Miller, Johnnie Weaver, David Corbett, Ælla Chiana Moskopp, Rebecca Bettencourt, Ho-Seok Ee, et al.",
+    "path": "assets/fonts/unifont_upper-18.0.01.woff2",
+    "conversion": "CFF straight-line contours converted losslessly to TrueType outlines, with reversed contour winding; WOFF2 compressed without subsetting. See scripts/build-unicode-fallbacks.py."
+  },
+  {
+    "family": "Noto Sans",
+    "source": "https://raw.githubusercontent.com/notofonts/notofonts.github.io/93fac8abebe6c7fed0c5b7d2456d8fa484fa146c/fonts/NotoSans/full/ttf/NotoSans-Regular.ttf",
+    "sourceSha256": "f5f552c8c5edb61fe6efb824baf4d4de47b1a8689ab4925ff43f7bd6a4ebece5",
+    "sha256": "5e69b5d9791d13fcf54b306bd7db7210691981363e8366844b61d08bf53b35fc",
+    "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+    "license": "licenses/Noto-OFL.txt",
+    "path": "assets/fonts/NotoSans-Regular.woff2"
+  },
+  {
+    "family": "Noto Sans",
+    "source": "https://raw.githubusercontent.com/notofonts/notofonts.github.io/93fac8abebe6c7fed0c5b7d2456d8fa484fa146c/fonts/NotoSans/full/ttf/NotoSans-Bold.ttf",
+    "sourceSha256": "3a08a47daa00cade516425c15c57615aef2fd418ec9811a7b9f465088f92cc05",
+    "sha256": "682022f287c5e97ab0fcf000b4dcefe468287cf0e474faafdf6b521dca549ecf",
+    "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+    "license": "licenses/Noto-OFL.txt",
+    "path": "assets/fonts/NotoSans-Bold.woff2"
+  },
+  {
+    "family": "Noto Sans",
+    "source": "https://raw.githubusercontent.com/notofonts/notofonts.github.io/93fac8abebe6c7fed0c5b7d2456d8fa484fa146c/fonts/NotoSans/full/ttf/NotoSans-Italic.ttf",
+    "sourceSha256": "126522ae1bb9cd92120287fc47dfc74ef981e73931d93e52c565fb7e09b2d74a",
+    "sha256": "d4650f9a6687babedc858c2bab9b66f3af0482edf913773ec467d1c2e9c0180c",
+    "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+    "license": "licenses/Noto-OFL.txt",
+    "path": "assets/fonts/NotoSans-Italic.woff2"
+  },
+  {
+    "family": "Noto Sans",
+    "source": "https://raw.githubusercontent.com/notofonts/notofonts.github.io/93fac8abebe6c7fed0c5b7d2456d8fa484fa146c/fonts/NotoSans/full/ttf/NotoSans-BoldItalic.ttf",
+    "sourceSha256": "2e34b41a4b9c234b1be7dff6d06cba18811ecb694b41350873edf0ec16a0f0fa",
+    "sha256": "2b74d12f0c0ab38db4149e3fedb039eba6e72cce7ec094ab904fbb7a99d48bfb",
+    "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+    "license": "licenses/Noto-OFL.txt",
+    "path": "assets/fonts/NotoSans-BoldItalic.woff2"
+  },
+  {
+    "family": "Noto Sans Mono",
+    "source": "https://raw.githubusercontent.com/notofonts/notofonts.github.io/93fac8abebe6c7fed0c5b7d2456d8fa484fa146c/fonts/NotoSansMono/unhinted/ttf/NotoSansMono-Regular.ttf",
+    "sourceSha256": "87f8ce0522a6c99b743ee5fc75b4073cfdd575639119672828b7b9944b65b4f4",
+    "sha256": "b97922da952ad3f7ee7280c83d9929456bed8d4fd832dddef01e595422508891",
+    "copyright": "Copyright 2022 The Noto Project Authors (https://github.com/notofonts/latin-greek-cyrillic)",
+    "license": "licenses/Noto-OFL.txt",
+    "path": "assets/fonts/NotoSansMono-Regular.woff2"
+  },
+  {
+    "family": "Noto Sans CJK JP",
+    "source": "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTF/Japanese/NotoSansCJKjp-Regular.otf",
+    "sourceSha256": "68a3fc98800b2a27b371f2fb79991daf3633bd89309d4ffaa6946fd587f375b5",
+    "sha256": "e24935ccb42dde87a7fc8f10929fc9c214fb6daa90637eb6c65db81eb3daea43",
+    "copyright": "© 2014-2021 Adobe (http://www.adobe.com/).",
+    "license": "licenses/NotoCJK-OFL.txt",
+    "path": "assets/fonts/NotoSansCJKjp-Regular.woff2"
+  },
+  {
+    "family": "Noto Sans CJK JP",
+    "source": "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/OTF/Japanese/NotoSansCJKjp-Bold.otf",
+    "sourceSha256": "e53dcb0dcb2922e45d01aae1ebd2f382bb81d4229b18b6b883bd170678af1f76",
+    "sha256": "39b13feaef2327a3fce9b12f4c67bc5c069b0a97e8e11e03b062260f6c2cdbbf",
+    "copyright": "© 2014-2021 Adobe (http://www.adobe.com/).",
+    "license": "licenses/NotoCJK-OFL.txt",
+    "path": "assets/fonts/NotoSansCJKjp-Bold.woff2"
+  }
+]
