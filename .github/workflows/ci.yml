@@ -41,6 +41,8 @@ jobs:
         if: ${{ !inputs.release }}
       - run: cargo install wasm-bindgen-cli --version 0.2.129 --locked
       - run: npm ci
+      - name: Install the independent Unicode text extractor
+        run: sudo apt-get update && sudo apt-get install -y poppler-utils
       - run: cargo fmt --check
       - run: cargo clippy --locked --target wasm32-unknown-unknown -- -D warnings
       - run: npm run build

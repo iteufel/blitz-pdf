@@ -180,17 +180,11 @@ impl Templates {
                             template.name
                         ));
                     }
-                    let index = crate::text::TextIndex::from_document(template.document.as_ref())?;
-                    let mut scene = anyrender::Scene::new();
-                    blitz_paint::paint_scene(
-                        &mut scene,
+                    let (scene, index) = crate::text::TextIndex::paint(
                         template.document.as_mut(),
-                        1.0,
                         self.width.ceil() as u32,
                         template.height.ceil() as u32,
-                        0,
-                        0,
-                    );
+                    )?;
                     painted.push(PaintedTemplate {
                         scene,
                         index,

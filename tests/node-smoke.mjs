@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { PDFDocument, PDFArray, PDFDict, PDFName, PDFRawStream, decodePDFRawStream } from "pdf-lib";
 import { renderPdf, renderPdfInWorker, init, getEngineVersion } from "blitz-pdf";
@@ -44,4 +45,11 @@ const workerBytes = await renderPdfInWorker('<link rel="stylesheet" href="main.c
 });
 assert.equal((await PDFDocument.load(workerBytes)).getPageCount(), 2);
 assert.equal(new Set(workerRequests).size, 3);
-console.log(`Node ${process.version}: rendering, worker rendering, async assets, metadata, attachments, custom XMP, CSS pages and margin templates passed (${bytes.length} / ${dynamicBytes.length} / ${workerBytes.length} bytes).`);
+const unicodeHtml = "<p>é</p><p>é</p><p>fi</p><p>ﬁ</p><p>ffi</p><p>ﬃ</p><p>😀</p>";
+const unicodeOptions = { metadata: { creationDate: "2026-01-01T00:00:00Z", documentId: "unicode-smoke" } };
+const unicode = await renderPdf(unicodeHtml, unicodeOptions);
+assert.deepEqual(await renderPdfInWorker(unicodeHtml, unicodeOptions), unicode);
+const extracted = spawnSync("pdftotext", ["-raw", "-enc", "UTF-8", "-", "-"], { input: unicode, encoding: "utf8" });
+assert.equal(extracted.status, 0, extracted.error?.message ?? extracted.stderr);
+assert.equal(extracted.stdout.replace(/\s+/g, " ").trim(), "é é fi ﬁ ffi ﬃ 😀");
+console.log(`Node ${process.version}: rendering, worker rendering, Unicode extraction, async assets, metadata, attachments, custom XMP, CSS pages and margin templates passed (${bytes.length} / ${dynamicBytes.length} / ${workerBytes.length} bytes).`);

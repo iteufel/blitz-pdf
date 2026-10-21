@@ -41,6 +41,8 @@ krilla = { path = "vendor/krilla" }
 [patch."https://github.com/DioxusLabs/blitz"]
 # Preserve print geometry, paragraph spacing, and report table layout.
 blitz-dom = { path = "vendor/blitz-dom" }
+# Carry source text alongside the exact layouts being painted.
+blitz-paint = { path = "vendor/blitz-paint" }
 
 [profile.release]
 opt-level = "s"

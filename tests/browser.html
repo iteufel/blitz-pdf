@@ -94,10 +94,16 @@
     }
     if (builtInRequests.length !== 6) throw new Error("renderPdfInWorker asset loading failed");
     workerResult.renderPdfInWorker = { renders: builtIn.length, assets: builtInRequests.length, ms: Math.round(performance.now() - builtInStart) };
+    const unicodeHtml = "<p>é</p><p>é</p><p>fi</p><p>ﬁ</p><p>ffi</p><p>ﬃ</p><p>😀</p>";
+    const unicodeOptions = { metadata: { creationDate: "2026-01-01T00:00:00Z", documentId: "unicode-smoke" } };
+    const unicodeBytes = await renderPdf(unicodeHtml, unicodeOptions);
+    const unicodeWorker = await renderPdfInWorker(unicodeHtml, unicodeOptions);
+    if (unicodeBytes.length !== unicodeWorker.length || unicodeBytes.some((byte, i) => byte !== unicodeWorker[i])) throw new Error("Browser and worker Unicode output differ");
+    globalThis.unicodePdfBytes = unicodeBytes;
     const url = URL.createObjectURL(new Blob([bytes], {type:"application/pdf"}));
     const link = document.querySelector("#download"); link.href = url; link.hidden = false;
     const frame = document.querySelector("#pdf"); frame.src = url; frame.hidden = false;
-    globalThis.testResult = { ok: true, profile:"PDF/A-3u", pages:2, bytes: bytes.length, engine: await getEngineVersion(), text, assets:requests, worker:workerResult };
+    globalThis.testResult = { ok: true, profile:"PDF/A-3u", pages:2, bytes: bytes.length, engine: await getEngineVersion(), text, assets:requests, worker:workerResult, unicode: { bytes: unicodeBytes.length, workerMatches: true } };
     globalThis.pdfBytes = bytes;
     status.textContent = JSON.stringify(globalThis.testResult, null, 2);
   } catch (error) {

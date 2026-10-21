@@ -111,8 +111,8 @@ impl PageNumbers {
                 Align::Right => self.width - width,
             };
         let y = self.top + (self.options.font_size * 2.0 - height) / 2.0;
-        let mut index = TextIndex::default();
-        index.add_layout(&layout, &text)?;
+        let index = TextIndex::from_layout(&layout, &text)?;
+        let mut text_ordinal = 0;
         for line in layout.lines() {
             for item in line.items() {
                 let PositionedLayoutItem::GlyphRun(glyph_run) = item else {
@@ -147,7 +147,8 @@ impl PageNumbers {
                 {
                     return Err("pageNumbers glyphs extend beyond the footer".into());
                 }
-                draw_text(surface, cache, &index, &command)?;
+                draw_text(surface, cache, index.get(text_ordinal)?, &command)?;
+                text_ordinal += 1;
             }
         }
         Ok(())
