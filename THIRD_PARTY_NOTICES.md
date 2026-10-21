@@ -20,6 +20,8 @@ independent modification dates; its source and MIT/Apache-2.0 licenses are in
 `vendor/krilla`. Blitz's DOM crate is patched for fractional PDF geometry,
 table-cell sizing/spacing, anonymous table wrappers, and paragraph margin
 collapse; its source and MIT/Apache-2.0 licenses are in `vendor/blitz-dom`.
+Blitz's paint crate exposes source-layout notifications for Unicode PDF text;
+its source and MIT/Apache-2.0 licenses are in `vendor/blitz-paint`.
 `vendor/README.md` lists these patches. Other dependencies are used without
 source modifications.
 

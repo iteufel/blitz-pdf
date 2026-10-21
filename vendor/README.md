@@ -75,3 +75,27 @@ against rebuilt WASM. Layout tests check physical margins, fractional viewport
 widths, header/footer geometry, table line spacing, descendant alignment, empty
 paragraphs, explicit empty-box dimensions, exact page-boundary fits, constrained
 table columns, anonymous cells, and inheritance after CSS page-size changes.
+
+# Blitz Unicode paint notifications
+
+`blitz-paint/` contains `packages/blitz-paint` from Blitz revision
+`e72650a6e67941852fddf025295cfee30c39ea32`, with its MIT/Apache-2.0 licenses.
+Its standalone manifest expands the upstream workspace dependencies and pins
+sibling crates to the same revision.
+
+- `src/lib.rs`: add the opt-in `TextObserver` and `paint_scene_with_text` API.
+  The original `paint_scene` entry point keeps its existing behavior.
+- `src/render.rs`: notify the observer immediately before painting inline text,
+  input/textarea text, and outside list markers; forward it to subdocuments.
+  The notifications supply the exact Parley layout and source string in paint
+  order, including visibility and stacking order decisions.
+
+The PDF renderer associates the observed runs with individual scene commands
+and checks that their glyphs match. It retains this immutable association when
+replaying pages or repeated table fragments. It no longer uses glyph shapes as
+document-wide source-text identities: `fi` and `ﬁ`, for example, legitimately
+share a shape while requiring different Unicode mappings.
+
+When upgrading Blitz, retain these notifications at all text-paint boundaries
+and run `tests/unicode.test.ts` (requires Poppler), the existing rendering,
+pagination, and template suites, and `npm run test:pdfa` on the rebuilt WASM.

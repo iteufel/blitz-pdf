@@ -367,18 +367,12 @@ fn prepare(document: &mut HtmlDocument, o: &Options) -> Result<PreparedDocument,
         ));
     }
 
-    let index = text::TextIndex::from_document(document.as_ref())?;
     let pagination = pagination::Pagination::from_document(document.as_ref());
-    let mut scene = anyrender::Scene::new();
-    blitz_paint::paint_scene(
-        &mut scene,
+    let (scene, index) = text::TextIndex::paint(
         document.as_mut(),
-        1.0,
         content_width.ceil() as u32,
         total_height.ceil().max(1.0) as u32,
-        0,
-        0,
-    );
+    )?;
     let pages = pagination.pages(&scene, total_height, content_height, rounding, o.max_pages)?;
     Ok(PreparedDocument {
         scene,

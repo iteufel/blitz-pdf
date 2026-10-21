@@ -396,6 +396,38 @@ Input limits: 16 MiB HTML, 64 MiB supplied assets, 64 MiB attachments, 32 MiB su
 resource requests. These are practical limits, not a complete sandbox; isolate
 untrusted documents in a terminable worker with application limits.
 
+### Unicode text
+
+HTML strings and UTF-8 assets preserve the text produced by layout, including
+non-Latin scripts, supplementary-plane characters, combining marks, and
+ligatures. Visually identical sequences such as `é` / `é`, `fi` / `ﬁ`, and
+composed / decomposed Hangul can coexist in one document. Their source mappings
+remain separate in body text, form values, repeated table headers, margin
+templates, and page numbers. CSS whitespace handling and `text-transform`
+still apply normally.
+
+PDF Unicode maps and `ActualText` spans preserve the original sequences when
+multiple characters share a glyph or a cluster uses multiple glyphs. Accurate
+copy/paste requires a reader that supports `ActualText`; extractors that ignore
+it, including PDF.js, can normalize ligatures or repeat combining clusters.
+The Unicode regression suite verifies extraction with Poppler's `pdftotext`.
+
+Unicode support does not imply that one font covers every character. There is
+no system-font discovery or automatic font download. For example, provide a
+static CJK font and select its family to render Chinese, Japanese, or Korean:
+
+```js
+import { readFile } from "node:fs/promises";
+
+const pdf = await renderPdf(
+  '<p style="font-family: \'Noto Sans CJK SC\'">中文 日本語 한국어</p>',
+  { fonts: [await readFile("NotoSansCJKsc-Regular.otf")] },
+);
+```
+
+Use `@font-face` and `assets` for a CSS family alias. Fonts must contain the
+required glyphs and permit embedding; missing glyphs still reject PDF/A output.
+
 ## PDF/A-3 conformance
 
 Every successful render targets **PDF/A-3u (ISO 19005-3, level U)**. The PDF 1.7
@@ -606,6 +638,8 @@ transition rule. [§ 14 UStG](https://www.gesetze-im-internet.de/ustg_1980/__14.
 
 Install Node.js 22.13+ for development tooling, Bun, and rustup. The repository
 pins Rust 1.99.0 and its WASM target in `rust-toolchain.toml`.
+The Unicode integration tests also require Poppler's `pdftotext` (`brew install
+poppler` on macOS or `apt-get install poppler-utils` on Debian/Ubuntu).
 
 ```sh
 npm ci
@@ -625,11 +659,12 @@ the tarball; it does not publish. Install locally using
 
 The pinned Stylo source in `vendor/stylo` enables paged-media properties in the
 Servo build. `vendor/krilla` adds custom XMP schema support and independent
-modification dates. `vendor/README.md` records both patches; the sources and
-licenses are included in the npm archive.
+modification dates. `vendor/blitz-paint` exposes source layouts in paint order
+so Unicode mappings retain each run's identity. `vendor/README.md` records the
+patches; the sources and licenses are included in the npm archive.
 
 `bun test` exercises the compiled module through its public package export. Tests
-extract Unicode with PDF.js and inspect embedded fonts, vector paths, absence
+extract Unicode with PDF.js and Poppler and inspect embedded fonts, vector paths, absence
 of page images, dimensions, pagination, assets, media queries, and error recovery.
 For browser verification, run `npm run test:browser` and open
 `http://127.0.0.1:4173`. CI builds WASM, runs Bun and Node tests, validates the

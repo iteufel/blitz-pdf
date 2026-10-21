@@ -1,4 +1,4 @@
-use crate::text::TextIndex;
+use crate::text::{TextIndex, TextRun};
 use anyrender::{
     Paint, Scene,
     recording::{GlyphRunCommand, RenderCommand},
@@ -298,13 +298,12 @@ fn draw_fill(
 pub(crate) fn draw_text(
     surface: &mut Surface<'_>,
     cache: &mut Cache,
-    index: &TextIndex,
+    source: &TextRun,
     run: &GlyphRunCommand,
 ) -> Result<(), String> {
     if run.glyphs.is_empty() || run.font_size <= 0.0 {
         return Ok(());
     }
-    let source = index.get(run)?;
     let font = cache.font(run)?;
     let glyph_affine = run.glyph_transform.unwrap_or(Affine::IDENTITY);
     let inverse = glyph_affine.inverse();
@@ -538,6 +537,7 @@ fn draw_fragment(
     surface.push_transform(&transform(Affine::translate((-left, -top))));
     let mut layers = Vec::new();
     let mut clips = ClipBounds::default();
+    let mut text_ordinal = 0;
     let result = (|| -> Result<(), String> {
         for command in &scene.commands {
             clips.update(command);
@@ -602,6 +602,10 @@ fn draw_fragment(
                     )?;
                 }
                 RenderCommand::GlyphRun(c) => {
+                    // Advance even for clipped runs. Each replay starts from the
+                    // same immutable scene, including repeated table fragments.
+                    let source = index.get(text_ordinal)?;
+                    text_ordinal += 1;
                     if let Some(g) = c.glyphs.first() {
                         let bounds = text_bounds(c).map(|bounds| clips.intersect(bounds));
                         if bounds.is_some_and(|r| r.width() <= 0.0 || r.height() <= 0.0) {
@@ -616,7 +620,7 @@ fn draw_fragment(
                             && y < bottom - 0.01
                             && bounds.is_none_or(|r| r.x1 > left && r.x0 < right)
                         {
-                            draw_text(surface, cache, index, c)?;
+                            draw_text(surface, cache, source, c)?;
                         }
                     }
                 }
