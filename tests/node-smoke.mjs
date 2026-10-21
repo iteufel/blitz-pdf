@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { PDFDocument, PDFArray, PDFDict, PDFName, PDFRawStream, decodePDFRawStream } from "pdf-lib";
-import { renderPdf, init, getEngineVersion } from "blitz-pdf";
+import { renderPdf, renderPdfInWorker, init, getEngineVersion } from "blitz-pdf";
 
 await Promise.all([init(), init()]);
 const bytes = await renderPdf("<h1>Node.js vector PDF</h1><p>WASM works here.</p>", { format: "Letter" });
@@ -37,4 +37,11 @@ assert.equal(af.size(), 2);
 const embedded = af.lookup(0, PDFDict).lookup(PDFName.of("EF"), PDFDict).lookup(PDFName.of("F"), PDFRawStream);
 assert.deepEqual(decodePDFRawStream(embedded).decode(), new Uint8Array([0, 128, 255]));
 assert.match(new TextDecoder().decode(dynamic.catalog.lookup(PDFName.of("Metadata"), PDFRawStream).contents), /<test:Runtime>Node<\/test:Runtime>/);
-console.log(`Node ${process.version}: rendering, async assets, metadata, attachments, custom XMP, CSS pages and margin templates passed (${bytes.length} / ${dynamicBytes.length} bytes).`);
+const workerRequests = [];
+const workerBytes = await renderPdfInWorker('<link rel="stylesheet" href="main.css"><p class="box">Worker thread</p><p class="second">Second page</p>', {
+  baseUrl: new URL("fixtures/dynamic/", import.meta.url).href,
+  assets: async url => { workerRequests.push(url); return readFile(new URL(url)); },
+});
+assert.equal((await PDFDocument.load(workerBytes)).getPageCount(), 2);
+assert.equal(new Set(workerRequests).size, 3);
+console.log(`Node ${process.version}: rendering, worker rendering, async assets, metadata, attachments, custom XMP, CSS pages and margin templates passed (${bytes.length} / ${dynamicBytes.length} / ${workerBytes.length} bytes).`);

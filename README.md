@@ -74,6 +74,35 @@ CPU work. Use a Web Worker or server worker thread when the calling thread must
 stay responsive. Each worker gets its own WASM instance. Shared memory and
 cross-origin isolation are not required.
 
+## Rendering in a worker
+
+`renderPdfInWorker` has the same signature as `renderPdf`, but layout and PDF
+serialization run in a new worker: a Web Worker in browsers and a
+`worker_threads` worker in Node.js and Bun. The calling thread stays responsive:
+
+```js
+import { renderPdfInWorker } from "blitz-pdf"; // or "blitz-pdf/browser"
+
+const pdfs = await Promise.all(documents.map(html =>
+  renderPdfInWorker(html, { format: "A4", assets: async url => (await fetch(url)).arrayBuffer() })));
+```
+
+The WASM is compiled once into a `WebAssembly.Module` and posted to
+every worker. Workers only instantiate it, so they skip WASM compilation.
+`init({ wasm })` sets the source for this shared module as well. Each call
+starts a separate worker and terminates it after the render, so its memory is
+freed and concurrent calls run in parallel. Limit concurrency yourself, for
+example to `navigator.hardwareConcurrency` or `os.availableParallelism()`.
+
+Options are validated on the calling thread. An `assets` function also runs
+there, so it can use closures, credentials, and caches; the worker receives
+only the returned bytes. Errors are reported the same way as for `renderPdf`.
+Bundlers must emit `dist/worker.js` through its `new Worker(new URL(...,
+import.meta.url))` reference; Vite and webpack do this automatically.
+
+To manage your own workers, post the shared module from `getWasmModule()` and
+pass it to `init({ wasm: module })` inside the worker.
+
 ## Options
 
 `renderPdf(html: string, options?: PdfOptions): Promise<Uint8Array>`
