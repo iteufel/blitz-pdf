@@ -18,6 +18,40 @@ export interface WorkerHandle {
 
 export type SpawnWorker = (events: WorkerEvents) => WorkerHandle;
 
+/** One engine per document; wait for termination before releasing the caller's slot. */
+export function renderInWorker(spawn: SpawnWorker, module: WebAssembly.Module, html: string,
+  options: RenderOptions, resolver?: AssetResolver): Promise<Uint8Array> {
+  return new Promise((resolve, reject) => {
+    const load = resolver && createAssetLoader(resolver);
+    let worker: WorkerHandle | undefined;
+    let settled = false;
+    function finish(callback: () => void) {
+      if (settled) return;
+      settled = true;
+      void Promise.resolve().then(() => worker?.terminate()).then(callback, reject);
+    }
+    const fail = (error: unknown) => finish(() => reject(error));
+    try {
+      worker = spawn({
+        message(message) {
+          if (settled || message.id !== 1) return;
+          if (message.type === "done") finish(() => resolve(message.pdf));
+          else if (message.type === "error") fail(message.error);
+          else if (!load) fail(new Error("Render worker requested assets without a resolver"));
+          else void load(message.urls).then(data => {
+            if (settled) return;
+            try {
+              worker!.post({ type: "assets", id: 1, data }, data.map(bytes => bytes.buffer as ArrayBuffer));
+            } catch (error) { fail(error); }
+          }, fail);
+        },
+        error: fail,
+      });
+      if (!settled) worker.post({ type: "render", id: 1, module, html, options, external: load !== undefined }, []);
+    } catch (error) { fail(error); }
+  });
+}
+
 interface Job {
   id: number;
   message: Extract<HostMessage, { type: "render" }>;

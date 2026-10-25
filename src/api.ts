@@ -3,7 +3,7 @@ import { createAssetLoader } from "./assets.js";
 import { normalizeOptions } from "./options.js";
 import { render, validateHtml } from "./render.js";
 import { compileWasm } from "./wasm.js";
-import { createWorkerPool, type SpawnWorker } from "./worker-host.js";
+import { createWorkerPool, renderInWorker, type SpawnWorker } from "./worker-host.js";
 import type { InitOptions, PdfOptions, PdfWorkerPool, PdfWorkerPoolOptions, WasmSource } from "./types.js";
 
 export interface ApiConfig {
@@ -15,7 +15,6 @@ export interface ApiConfig {
 export function createApi({ defaultSource, prepare = async source => source, spawnWorker }: ApiConfig) {
   let compiled: Promise<WebAssembly.Module> | undefined;
   let ready: Promise<void> | undefined;
-  let defaultPool: PdfWorkerPool | undefined;
 
   function compile(source?: WasmSource): Promise<WebAssembly.Module> {
     if (compiled) return compiled;
@@ -69,10 +68,11 @@ export function createApi({ defaultSource, prepare = async source => source, spa
     };
   }
 
-  /** Render in the shared bounded pool. An assets function still runs on the calling thread. */
+  /** Render in a fresh worker and release its engine before settling. */
   async function renderPdfInWorker(html: string, options: PdfOptions = {}): Promise<Uint8Array> {
-    defaultPool ??= createPdfWorkerPool();
-    return defaultPool.renderPdf(html, options);
+    validateHtml(html);
+    const { assetResolver, ...normalized } = normalizeOptions(options);
+    return renderInWorker(spawnWorker, await compile(), html, normalized, assetResolver);
   }
 
   async function getEngineVersion(): Promise<string> { await init(); return engine_version(); }

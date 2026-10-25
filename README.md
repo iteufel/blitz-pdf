@@ -77,7 +77,7 @@ cross-origin isolation are not required.
 ## Rendering in a worker
 
 `renderPdfInWorker` has the same signature as `renderPdf`, but layout and PDF
-serialization run in a reusable worker: a Web Worker in browsers and a
+serialization run in a fresh worker: a Web Worker in browsers and a
 `worker_threads` worker in Node.js and Bun. The calling thread stays responsive:
 
 ```js
@@ -89,16 +89,17 @@ const pdfs = await Promise.all(documents.map(html =>
 
 The WASM is compiled once into a `WebAssembly.Module` and posted to
 every worker. Workers only instantiate it, so they skip WASM compilation.
-`init({ wasm })` sets the source for this shared module as well. The default pool
-runs up to four documents concurrently and queues additional work. Each worker
-keeps its initialized engine and registered bundled fonts between documents; HTML,
-custom fonts, assets, metadata and attachments remain local to each render.
-Idle workers are released after 30 seconds, and workers are replaced after 100
-documents or any render/asset/worker error. Idle Node/Bun workers do not keep the
-process alive. A worker's first render still initializes its font collection;
-warming only the parent with `init()` does not warm the workers.
+`init({ wasm })` sets the source for this shared module as well. Each render
+creates one worker and waits for its termination on success or failure before
+settling. No idle engine or font collection is retained. Bound concurrent calls
+in the application when rendering many documents at once.
 
-For application-specific concurrency and shutdown, own a pool:
+For applications that explicitly choose to retain engines between documents,
+`createPdfWorkerPool` remains an opt-in API. It is not used by
+`renderPdfInWorker`. A pool retains initialized engines and bundled fonts while
+idle, so it uses more resident memory. Assets, custom fonts, metadata and
+attachments remain local to each render. Configure its lifetime and close it
+when no longer needed:
 
 ```js
 import { createPdfWorkerPool } from "blitz-pdf";

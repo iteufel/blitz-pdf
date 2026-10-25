@@ -49,6 +49,7 @@ const unicodeHtml = "<p>é</p><p>é</p><p>fi</p><p>ﬁ</p><p>ffi</p><p>ﬃ</p><
 const unicodeOptions = { metadata: { creationDate: "2026-01-01T00:00:00Z", documentId: "unicode-smoke" } };
 const unicode = await renderPdf(unicodeHtml, unicodeOptions);
 assert.deepEqual(await renderPdfInWorker(unicodeHtml, unicodeOptions), unicode);
+assert.equal(process.report.getReport().workers.length, 0, "renderPdfInWorker retained an idle worker");
 const extracted = spawnSync("pdftotext", ["-raw", "-enc", "UTF-8", "-", "-"], { input: unicode, encoding: "utf8" });
 assert.equal(extracted.status, 0, extracted.error?.message ?? extracted.stderr);
 assert.equal(extracted.stdout.replace(/\s+/g, " ").trim(), "é é fi ﬁ ffi ﬃ 😀");
