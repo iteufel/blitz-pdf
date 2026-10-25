@@ -123,3 +123,18 @@ export interface PdfOptions {
   /** Reject larger documents. Default: 100; maximum: 1000. */
   maxPages?: number;
 }
+/** Limits for a pool of reusable, independent PDF engines. */
+export interface PdfWorkerPoolOptions {
+  /** Maximum simultaneous renders. Default: 4. */
+  maxWorkers?: number;
+  /** Release an unused worker after this many milliseconds. Default: 30000; 0 disables reuse. */
+  idleTimeoutMs?: number;
+  /** Recreate a worker after this many documents to bound retained engine memory. Default: 100. */
+  maxJobsPerWorker?: number;
+}
+
+export interface PdfWorkerPool {
+  renderPdf(html: string, options?: PdfOptions): Promise<Uint8Array>;
+  /** Stop accepting work, finish accepted renders, and release every worker. Idempotent. */
+  close(): Promise<void>;
+}

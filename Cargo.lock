@@ -170,7 +170,7 @@ dependencies = [
 
 [[package]]
 name = "blitz-pdf-wasm"
-version = "0.1.7"
+version = "0.1.8"
 dependencies = [
  "anyrender",
  "blitz-dom",
@@ -192,6 +192,7 @@ dependencies = [
  "stylo",
  "stylo_traits",
  "wasm-bindgen",
+ "wuff",
 ]
 
 [[package]]

@@ -1,10 +1,10 @@
 import type { RenderOptions } from "./render.js";
 
 export type HostMessage =
-  | { type: "render"; module: WebAssembly.Module; html: string; options: RenderOptions; external: boolean }
-  | { type: "assets"; data: Uint8Array[] };
+  | { type: "render"; id: number; module: WebAssembly.Module; html: string; options: RenderOptions; external: boolean }
+  | { type: "assets"; id: number; data: Uint8Array[] };
 
 export type WorkerMessage =
-  | { type: "assets"; urls: string[] }
-  | { type: "done"; pdf: Uint8Array }
-  | { type: "error"; error: unknown };
+  | { type: "assets"; id: number; urls: string[] }
+  | { type: "done"; id: number; pdf: Uint8Array }
+  | { type: "error"; id: number; error: unknown };

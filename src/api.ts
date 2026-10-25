@@ -3,8 +3,8 @@ import { createAssetLoader } from "./assets.js";
 import { normalizeOptions } from "./options.js";
 import { render, validateHtml } from "./render.js";
 import { compileWasm } from "./wasm.js";
-import { renderInWorker, type SpawnWorker } from "./worker-host.js";
-import type { InitOptions, PdfOptions, WasmSource } from "./types.js";
+import { createWorkerPool, type SpawnWorker } from "./worker-host.js";
+import type { InitOptions, PdfOptions, PdfWorkerPool, PdfWorkerPoolOptions, WasmSource } from "./types.js";
 
 export interface ApiConfig {
   defaultSource: () => Promise<WasmSource> | WasmSource;
@@ -15,6 +15,7 @@ export interface ApiConfig {
 export function createApi({ defaultSource, prepare = async source => source, spawnWorker }: ApiConfig) {
   let compiled: Promise<WebAssembly.Module> | undefined;
   let ready: Promise<void> | undefined;
+  let defaultPool: PdfWorkerPool | undefined;
 
   function compile(source?: WasmSource): Promise<WebAssembly.Module> {
     if (compiled) return compiled;
@@ -43,13 +44,37 @@ export function createApi({ defaultSource, prepare = async source => source, spa
     return render(html, normalized, assetResolver && createAssetLoader(assetResolver));
   }
 
-  /** Like `renderPdf`, but layout and serialization run in a new worker. An `assets` function still runs on the calling thread. */
+  /** Create an owned pool, with independent concurrency and shutdown. No workers start until needed. */
+  function createPdfWorkerPool(options: PdfWorkerPoolOptions = {}): PdfWorkerPool {
+    const pool = createWorkerPool(spawnWorker, options);
+    // Include compilation in accepted work so close also drains renders waiting for WASM.
+    const pending = new Set<Promise<Uint8Array>>();
+    let closing: Promise<void> | undefined;
+    return {
+      renderPdf(html: string, options: PdfOptions = {}): Promise<Uint8Array> {
+        if (closing) return Promise.reject(new Error("PDF worker pool is closed"));
+        const work = (async () => {
+          validateHtml(html);
+          const { assetResolver, ...normalized } = normalizeOptions(options);
+          return pool.render(await compile(), html, normalized, assetResolver);
+        })();
+        pending.add(work);
+        void work.then(() => pending.delete(work), () => pending.delete(work));
+        return work;
+      },
+      close(): Promise<void> {
+        closing ??= Promise.allSettled([...pending]).then(() => pool.close());
+        return closing;
+      },
+    };
+  }
+
+  /** Render in the shared bounded pool. An assets function still runs on the calling thread. */
   async function renderPdfInWorker(html: string, options: PdfOptions = {}): Promise<Uint8Array> {
-    validateHtml(html);
-    const { assetResolver, ...normalized } = normalizeOptions(options);
-    return renderInWorker(spawnWorker, await compile(), html, normalized, assetResolver);
+    defaultPool ??= createPdfWorkerPool();
+    return defaultPool.renderPdf(html, options);
   }
 
   async function getEngineVersion(): Promise<string> { await init(); return engine_version(); }
-  return { init, renderPdf, renderPdfInWorker, getWasmModule, getEngineVersion };
+  return { init, renderPdf, renderPdfInWorker, createPdfWorkerPool, getWasmModule, getEngineVersion };
 }

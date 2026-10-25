@@ -77,7 +77,7 @@ cross-origin isolation are not required.
 ## Rendering in a worker
 
 `renderPdfInWorker` has the same signature as `renderPdf`, but layout and PDF
-serialization run in a new worker: a Web Worker in browsers and a
+serialization run in a reusable worker: a Web Worker in browsers and a
 `worker_threads` worker in Node.js and Bun. The calling thread stays responsive:
 
 ```js
@@ -89,10 +89,33 @@ const pdfs = await Promise.all(documents.map(html =>
 
 The WASM is compiled once into a `WebAssembly.Module` and posted to
 every worker. Workers only instantiate it, so they skip WASM compilation.
-`init({ wasm })` sets the source for this shared module as well. Each call
-starts a separate worker and terminates it after the render, so its memory is
-freed and concurrent calls run in parallel. Limit concurrency yourself, for
-example to `navigator.hardwareConcurrency` or `os.availableParallelism()`.
+`init({ wasm })` sets the source for this shared module as well. The default pool
+runs up to four documents concurrently and queues additional work. Each worker
+keeps its initialized engine and registered bundled fonts between documents; HTML,
+custom fonts, assets, metadata and attachments remain local to each render.
+Idle workers are released after 30 seconds, and workers are replaced after 100
+documents or any render/asset/worker error. Idle Node/Bun workers do not keep the
+process alive. A worker's first render still initializes its font collection;
+warming only the parent with `init()` does not warm the workers.
+
+For application-specific concurrency and shutdown, own a pool:
+
+```js
+import { createPdfWorkerPool } from "blitz-pdf";
+
+const pool = createPdfWorkerPool({ maxWorkers: 4, idleTimeoutMs: 300_000 });
+try {
+  const pdf = await pool.renderPdf(html, { format: "A4" });
+} finally {
+  await pool.close(); // on application shutdown, not after every document
+}
+```
+
+`maxWorkers` and `maxJobsPerWorker` must be positive safe integers;
+`idleTimeoutMs` must be an integer from 0 to 2147483647 (0 disables reuse).
+`close()` rejects new submissions, drains already accepted renders, and waits
+for worker termination. CPU work is not interrupted. Applications must bound
+their asset resolvers with their own deadlines so shutdown can finish.
 
 Options are validated on the calling thread. An `assets` function also runs
 there, so it can use closures, credentials, and caches; the worker receives
@@ -725,13 +748,28 @@ To retry a failed release, rerun its GitHub Actions run or use
 tag too. Published npm versions cannot be overwritten; subsequent releases need
 a new version.
 
+## Font startup
+
+Bundled WOFF2 assets are decoded to SFNT by `build.rs`. The WASM registers
+immutable slices of those bytes directly, avoiding runtime WOFF2 decompression
+and a second font-sized heap allocation. The original fonts, family ordering,
+Unicode coverage and document-specific font isolation are preserved. This trades
+a larger WASM download for faster cold renders; serve the WASM with HTTP
+compression in browsers. User-supplied WOFF/WOFF2 fonts are still decoded at runtime.
+
 ## Performance benchmarks
 
 ```sh
 bun run bench
 bun run bench --iterations=50 --warmup=5
+bun run bench --mode=worker --iterations=50 --warmup=5
+bun run bench --mode=fresh-worker --iterations=20 --warmup=1
 bun run bench --iterations=50 --warmup=5 --json > benchmark-results.json
 ```
+
+`--mode=main` (default) renders on the calling thread, `worker` reuses one
+worker, and `fresh-worker` retires the worker after each document to expose
+font startup costs.
 
 Benchmarks measure WASM initialization separately, then first-render, mean,
 median, p95, throughput, and output size for small HTML, a styled invoice,

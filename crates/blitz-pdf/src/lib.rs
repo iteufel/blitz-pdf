@@ -20,8 +20,6 @@ use std::{
 };
 use wasm_bindgen::prelude::*;
 
-const DEFAULT_FONT: &[u8] = include_bytes!("../../../assets/fonts/NotoSans-Regular.woff2");
-
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 struct Options {

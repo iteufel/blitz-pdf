@@ -1,6 +1,6 @@
 [package]
 name = "blitz-pdf-wasm"
-version = "0.1.7"
+version = "0.1.8"
 edition = "2024"
 rust-version = "1.92"
 license = "MIT"
@@ -9,6 +9,10 @@ publish = false
 [lib]
 path = "crates/blitz-pdf/src/lib.rs"
 crate-type = ["cdylib", "rlib"]
+
+[build-dependencies]
+# Decode bundled web fonts at build time, not on every WASM engine startup.
+wuff = "=0.2.9"
 
 [dependencies]
 blitz-dom = { git = "https://github.com/DioxusLabs/blitz", rev = "f8723f495c7c6bfb611a923a21ed5c8e0fe95d55", default-features = false, features = ["svg", "woff"] }

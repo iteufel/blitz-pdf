@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
-import { getWasmModule, renderPdf, renderPdfInWorker } from "blitz-pdf";
+import { createPdfWorkerPool, getWasmModule, renderPdf, renderPdfInWorker } from "blitz-pdf";
 import { inspect } from "./helpers";
 
 const fixtures = new URL("fixtures/dynamic/", import.meta.url).href;
@@ -63,5 +63,69 @@ describe("renderPdfInWorker", () => {
     `], { cwd: new URL("../", import.meta.url), encoding: "utf8" });
     expect(child.status, child.stderr).toBe(0);
     expect(child.stdout.trim()).toBe("%PDF-");
+  });
+});
+
+describe("owned worker pools", () => {
+  const metadata = { creationDate: "2026-01-01T00:00:00Z", documentId: "pooled-isolation" };
+
+  test("isolates assets, metadata, attachments and supplied fonts across reused documents", async () => {
+    const pool = createPdfWorkerPool({ maxWorkers: 1 });
+    try {
+      const font = await readFile(new URL("../assets/fonts/DejaVuSansMono.ttf", import.meta.url));
+      const html = '<link rel="stylesheet" href="report.css"><p>Isolated document café</p>';
+      for (let i = 0; i < 3; i++) {
+        const requests: string[] = [];
+        const options = {
+          metadata: { ...metadata, title: `Document ${i}` },
+          ...(i === 0 ? { fonts: [font], attachments: [{ name: "private.txt", data: "first document only" }] } : {}),
+          assets: async (url: string) => {
+            requests.push(url);
+            if (url.endsWith("font.ttf")) return font;
+            return i === 0
+              ? '@font-face{font-family:PrivatePoolFont;src:url(font.ttf)}p{font:14px PrivatePoolFont;color:red}'
+              : `p{font:14px ${i === 1 ? "PrivatePoolFont" : "DejaVu Sans Mono"};color:blue}`;
+          },
+        };
+        const actual = await pool.renderPdf(html, options);
+        expect(requests.filter(url => url.endsWith("report.css"))).toHaveLength(1);
+        // A separate main-thread engine never saw the first document's private font family.
+        if (i > 0) expect(actual).toEqual(await renderPdf(html, options));
+        expect((await inspect(actual)).pages[0]!.text).toContain("Isolated document café");
+      }
+    } finally { await pool.close(); }
+  });
+
+  test("preserves all concurrent documents when close starts immediately, including compilation", async () => {
+    const pool = createPdfWorkerPool({ maxWorkers: 2 });
+    const jobs = Array.from({ length: 6 }, (_, i) => pool.renderPdf(`<p>Queued ${i}</p>`, { metadata }));
+    const closed = pool.close();
+    await expect(pool.renderPdf("Too late")).rejects.toThrow("closed");
+    for (const [i, bytes] of (await Promise.all(jobs)).entries()) {
+      expect((await inspect(bytes)).pages[0]!.text).toContain(`Queued ${i}`);
+    }
+    await closed;
+  });
+
+  test("recovers from a failed asset batch without leaking delayed data into the next job", async () => {
+    const pool = createPdfWorkerPool({ maxWorkers: 1 });
+    const delayed = Promise.withResolvers<string>();
+    try {
+      const bad = pool.renderPdf('<link rel="stylesheet" href="slow.css"><link rel="stylesheet" href="fail.css">', {
+        assets: url => url.endsWith("slow.css") ? delayed.promise : Promise.reject(new Error("offline")),
+      });
+      const next = pool.renderPdf("<p>Clean next job</p>", { metadata });
+      await expect(bad).rejects.toThrow("Failed to load asset");
+      delayed.resolve("body{display:none}");
+      expect(await next).toEqual(await renderPdf("<p>Clean next job</p>", { metadata }));
+    } finally { delayed.resolve(""); await pool.close(); }
+  });
+
+  test("exports an owned pool from the browser API", async () => {
+    // Actual browser execution is covered by tests/browser.html; import verifies both public surfaces.
+    const browser = await import("blitz-pdf/browser");
+    const pool = browser.createPdfWorkerPool({ maxWorkers: 1 });
+    await pool.close();
+    await expect(pool.renderPdf("closed")).rejects.toThrow("closed");
   });
 });

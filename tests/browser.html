@@ -9,7 +9,7 @@
 <a id="download" hidden download="blitz-pdf-browser.pdf">Download PDF</a>
 <iframe id="pdf" title="Generated PDF" hidden></iframe>
 <script type="module">
-  import { init, renderPdf, renderPdfInWorker, getWasmModule, getEngineVersion } from "../dist/browser.js";
+  import { init, renderPdf, renderPdfInWorker, createPdfWorkerPool, getWasmModule, getEngineVersion } from "../dist/browser.js";
   import { getDocument, GlobalWorkerOptions } from "../node_modules/pdfjs-dist/build/pdf.mjs";
   GlobalWorkerOptions.workerSrc = "../node_modules/pdfjs-dist/build/pdf.worker.mjs";
   const status = document.querySelector("#status");
@@ -100,10 +100,22 @@
     const unicodeWorker = await renderPdfInWorker(unicodeHtml, unicodeOptions);
     if (unicodeBytes.length !== unicodeWorker.length || unicodeBytes.some((byte, i) => byte !== unicodeWorker[i])) throw new Error("Browser and worker Unicode output differ");
     globalThis.unicodePdfBytes = unicodeBytes;
+    const pool = createPdfWorkerPool({ maxWorkers: 1 });
+    try {
+      for (const color of ["red", "blue"]) {
+        const html = '<link rel="stylesheet" href="private.css"><p>Isolated pooled browser document</p>';
+        let requests = 0;
+        const options = { ...unicodeOptions, assets: () => { requests++; return 'p{color:' + color + '}'; } };
+        const pooled = await pool.renderPdf(html, options);
+        if (requests !== 1) throw new Error("Pooled browser resolver isolation failed");
+        const expected = await renderPdf(html, options);
+        if (pooled.length !== expected.length || pooled.some((byte, i) => byte !== expected[i])) throw new Error("Pooled browser output differs");
+      }
+    } finally { await pool.close(); }
     const url = URL.createObjectURL(new Blob([bytes], {type:"application/pdf"}));
     const link = document.querySelector("#download"); link.href = url; link.hidden = false;
     const frame = document.querySelector("#pdf"); frame.src = url; frame.hidden = false;
-    globalThis.testResult = { ok: true, profile:"PDF/A-3u", pages:2, bytes: bytes.length, engine: await getEngineVersion(), text, assets:requests, worker:workerResult, unicode: { bytes: unicodeBytes.length, workerMatches: true } };
+    globalThis.testResult = { ok: true, profile:"PDF/A-3u", pages:2, bytes: bytes.length, engine: await getEngineVersion(), text, assets:requests, worker:workerResult, pooledWorker: { renders: 2, isolated: true, closed: true }, unicode: { bytes: unicodeBytes.length, workerMatches: true } };
     globalThis.pdfBytes = bytes;
     status.textContent = JSON.stringify(globalThis.testResult, null, 2);
   } catch (error) {
