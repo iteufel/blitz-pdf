@@ -170,7 +170,7 @@ dependencies = [
 
 [[package]]
 name = "blitz-pdf-wasm"
-version = "0.1.9"
+version = "0.1.10"
 dependencies = [
  "anyrender",
  "blitz-dom",
