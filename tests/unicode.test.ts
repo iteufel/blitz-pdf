@@ -21,6 +21,50 @@ async function inspectUnicode(bytes: Uint8Array, mode = "-raw") {
 
 const equivalentShapes = ["é", "e\u0301", "fi", "ﬁ", "ffi", "ﬃ"];
 
+test.each([["literal", "\u0002"], ["decimal entity", "&#2;"], ["hex entity", "&#x02;"]])("ignores STX in rendered text: %s", async (_, control) => {
+  const result = await inspectUnicode(await renderPdf(`<p>be${control}fore${control}after</p>`));
+  expect(result.unicode).toEqual(["beforeafter"]);
+  expect(result.images).toHaveLength(0);
+});
+
+test("ignores text controls before shaping without changing whitespace or Unicode", async () => {
+  const controls = String.fromCharCode(...Array.from({ length: 31 }, (_, i) => i + 1)
+    .filter(code => ![9, 10, 12, 13].includes(code)), 127);
+  const html = (control: string) => `<p>é${control}é fi${control}ffi\tA\nB\r\nC\fD</p><pre>E\nF\r\nG</pre>`;
+  const expected = await inspectUnicode(await renderPdf(html("")));
+  const result = await inspectUnicode(await renderPdf(html(controls)));
+  expect(result.unicode).toEqual(expected.unicode);
+  // Ignored controls must not leave gaps or disrupt shaping/line layout.
+  // PDF.js assigns a new internal font name for each opened document.
+  const geometry = (page: typeof result.pages[number]) => page.items.map(({ fontName, ...item }) => item);
+  expect(geometry(result.pages[0])).toEqual(geometry(expected.pages[0]));
+});
+
+test("ignores STX in form values, generated text, and list markers", async () => {
+  const result = await inspectUnicode(await renderPdf(`<style>
+    .generated::before { content: "Gen\\2 erated" }
+    li { list-style-type: "Mar\\2 ker " }
+  </style><input value="In&#2;put"><textarea>Text\u0002area</textarea>
+  <p class="generated"></p><ul><li>Outside</li><li style="list-style-position:inside">Inside</li></ul>`));
+  expect(result.unicode).toEqual(["Input Textarea Generated Outside Marker Marker Inside"]);
+});
+
+test("ignores STX in worker body and margin templates", async () => {
+  const result = await inspectUnicode(await renderPdfInWorker("<p>Bo\u0002dy</p>", {
+    margin: 40,
+    headerTemplate: "<div>Head&#2;er</div>",
+    footerTemplate: "<div>Foot&#x02;er</div>",
+  }));
+  expect(result.unicode).toEqual(["Body Header Footer"]);
+});
+
+test("renders control-only content and keeps subsequent renders usable", async () => {
+  const result = await inspectUnicode(await renderPdf("<p>\u0002&#2;&#x02;</p>"));
+  expect(result.unicode).toEqual([""]);
+  expect(result.pages[0].hasText).toBe(false);
+  expect((await inspectUnicode(await renderPdf("<p>Still usable</p>"))).unicode).toEqual(["Still usable"]);
+});
+
 test("preserves distinct Unicode sequences that shape to identical glyphs", async () => {
   const result = await inspectUnicode(await renderPdf(equivalentShapes.map(text => `<p>${text}</p>`).join("")));
   expect(result.unicode).toEqual([equivalentShapes.join(" ")]);

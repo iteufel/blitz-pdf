@@ -878,7 +878,7 @@ fn create_text_editor(doc: &mut BaseDocument, input_element_id: NodeId, is_multi
     if !matches!(element.special_data, SpecialElementData::TextInput(_)) {
         let mut text_input_data = TextInputData::new(is_multiline);
         let editor = &mut text_input_data.editor;
-        editor.set_text(&initial_text);
+        editor.set_text(&super::text_controls::strip_text_controls(&initial_text));
         element.special_data = SpecialElementData::TextInput(text_input_data);
     }
 

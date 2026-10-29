@@ -62,6 +62,13 @@ Node/browser checks, and `npm run test:pdfa` against the rebuilt WASM.
 Its standalone manifest expands the upstream workspace dependencies and pins
 the sibling Blitz crates to the same revision.
 
+- `layout/text_controls.rs`, `layout/inline/build.rs`, `layout/construct.rs`, and
+  `layout/list.rs`: omit non-whitespace ASCII controls before text shaping,
+  including decoded HTML character references, form values, and list markers.
+  This prevents controls such as U+0002 from producing missing glyphs rejected
+  by PDF/A export, without leaving layout gaps. CSS whitespace and printable
+  Unicode retain their existing handling; source HTML and assets are unchanged.
+  `tests/unicode.test.ts` covers the body, margin templates, and worker API.
 - `config.rs`, `document.rs`, `stylo_device.rs`, `iframe.rs`, `resolve.rs`, and
   `layout/writing_mode.rs`: provide an optional fractional CSS viewport and
   optional layout rounding. Defaults preserve the upstream window behavior.

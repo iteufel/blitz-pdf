@@ -73,7 +73,13 @@ fn node_list_item_child(
     let styles = node.primary_styles().unwrap();
     let list_style_type = styles.clone_list_style_type();
     let list_style_position = styles.clone_list_style_position();
-    let marker = marker_for_style(list_style_type.clone(), index)?;
+    let mut marker = marker_for_style(list_style_type.clone(), index)?;
+    if let Marker::String(text) = &mut marker {
+        // Store the same text that is shaped so paint-time Unicode ranges stay valid.
+        if let std::borrow::Cow::Owned(filtered) = super::text_controls::strip_text_controls(text) {
+            *text = filtered;
+        }
+    }
 
     let position = match list_style_position {
         ListStylePosition::Inside => ListItemLayoutPosition::Inside,

@@ -29,6 +29,7 @@ pub(crate) mod list;
 pub(crate) mod paint_tree;
 pub(crate) mod replaced;
 pub(crate) mod table;
+mod text_controls;
 pub(crate) mod text_transform;
 #[cfg(feature = "writing-mode")]
 pub(crate) mod writing_mode;
