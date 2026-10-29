@@ -663,6 +663,9 @@ transition rule. [§ 14 UStG](https://www.gesetze-im-internet.de/ustg_1980/__14.
 - Text retains shaped glyphs and Unicode cluster mappings, including ligatures.
   Unrecognized or ambiguous text runs are rejected rather than assigned guessed
   Unicode.
+  Non-whitespace ASCII controls (U+0000–U+0008, U+000B, U+000E–U+001F,
+  U+007F) are ignored in rendered text after HTML/CSS parsing. Normal whitespace
+  processing and errors for missing printable glyphs are preserved.
 - Pagination fragments one continuous vertical layout. Per-page geometry,
   repeated fixed-position body elements, nested multicolumn fragmentation, and
   independent fragmentation of parallel flex/grid flows are not implemented. Oversized

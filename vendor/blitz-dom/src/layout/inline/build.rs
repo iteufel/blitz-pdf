@@ -15,6 +15,7 @@ use crate::{
     NodeData,
     layout::list::BULLET_FONT_FAMILY,
     layout::replaced::is_inline_box_element,
+    layout::text_controls::strip_text_controls,
     layout::text_transform::{CaseTransform, TextTransformer},
     node::{ListItemLayout, ListItemLayoutPosition, Marker, TextBrush, TextLayout},
     stylo_to_parley,
@@ -296,8 +297,8 @@ pub(crate) fn build_inline_layout_into(
                 // node.remove_damage(CONSTRUCT_DESCENDENT | CONSTRUCT_FC | CONSTRUCT_BOX);
                 // dbg!(&data.content);
 
-                let text =
-                    text_transformer.transform(&data.content, parent_text_transform, builder);
+                let content = strip_text_controls(&data.content);
+                let text = text_transformer.transform(&content, parent_text_transform, builder);
                 builder.push_text(text);
             }
             NodeData::Comment { .. } => {
