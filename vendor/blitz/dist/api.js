@@ -1,46 +1,69 @@
-import loadWasm, { render_pdf, engine_version, RenderJob } from "../wasm/blitz_pdf.js";
+import loadWasm, { engine_version } from "../wasm/blitz_pdf.js";
 import { createAssetLoader } from "./assets.js";
 import { normalizeOptions } from "./options.js";
-export function createApi(defaultSource, prepare = async (source) => source) {
+import { render, validateHtml } from "./render.js";
+import { compileWasm } from "./wasm.js";
+import { createWorkerPool, renderInWorker } from "./worker-host.js";
+export function createApi({ defaultSource, prepare = async (source) => source, spawnWorker }) {
+    let compiled;
     let ready;
+    function compile(source) {
+        if (compiled)
+            return compiled;
+        compiled = (async () => compileWasm(await prepare(source ?? await defaultSource())))()
+            .catch((error) => { compiled = undefined; throw error; });
+        return compiled;
+    }
     /** Initialize once. Concurrent callers share initialization; failed loads can be retried. */
     function init(options = {}) {
         if (ready)
             return ready;
         ready = (async () => {
-            const source = await prepare(options.wasm ?? await defaultSource());
-            await loadWasm({ module_or_path: source });
+            await loadWasm({ module_or_path: await compile(options.wasm) });
         })().catch((error) => { ready = undefined; throw error; });
         return ready;
     }
+    /** The compiled WASM module, compiled once and shared with every worker. It can be posted to your own workers. */
+    function getWasmModule() { return compile(); }
     /** Render HTML/CSS to a vector PDF/A-3u with embedded fonts and selectable text. */
     async function renderPdf(html, options = {}) {
-        if (typeof html !== "string")
-            throw new TypeError("html must be a string");
-        if (new TextEncoder().encode(html).byteLength > 16 * 1024 * 1024)
-            throw new RangeError("HTML exceeds the 16 MiB limit");
+        validateHtml(html);
         const { assetResolver, ...normalized } = normalizeOptions(options);
         await init();
-        if (!assetResolver)
-            return render_pdf(html, normalized);
-        const load = createAssetLoader(assetResolver);
-        const job = new RenderJob(html, normalized);
-        try {
-            for (;;) {
-                const urls = job.pending_assets();
-                if (urls.length === 0)
-                    return job.finish();
-                const data = await load(urls);
-                for (let i = 0; i < urls.length; i++)
-                    job.provide_asset(urls[i], data[i]);
-            }
-        }
-        finally {
-            // In-flight JS loaders never access this job, including after a sibling rejects.
-            job.free();
-        }
+        return render(html, normalized, assetResolver && createAssetLoader(assetResolver));
+    }
+    /** Create an owned pool, with independent concurrency and shutdown. No workers start until needed. */
+    function createPdfWorkerPool(options = {}) {
+        const pool = createWorkerPool(spawnWorker, options);
+        // Include compilation in accepted work so close also drains renders waiting for WASM.
+        const pending = new Set();
+        let closing;
+        return {
+            renderPdf(html, options = {}) {
+                if (closing)
+                    return Promise.reject(new Error("PDF worker pool is closed"));
+                const work = (async () => {
+                    validateHtml(html);
+                    const { assetResolver, ...normalized } = normalizeOptions(options);
+                    return pool.render(await compile(), html, normalized, assetResolver);
+                })();
+                pending.add(work);
+                void work.then(() => pending.delete(work), () => pending.delete(work));
+                return work;
+            },
+            close() {
+                closing ??= Promise.allSettled([...pending]).then(() => pool.close());
+                return closing;
+            },
+        };
+    }
+    /** Render in a fresh worker and release its engine before settling. */
+    async function renderPdfInWorker(html, options = {}) {
+        validateHtml(html);
+        const { assetResolver, ...normalized } = normalizeOptions(options);
+        return renderInWorker(spawnWorker, await compile(), html, normalized, assetResolver);
     }
     async function getEngineVersion() { await init(); return engine_version(); }
-    return { init, renderPdf, getEngineVersion };
+    return { init, renderPdf, renderPdfInWorker, createPdfWorkerPool, getWasmModule, getEngineVersion };
 }
 //# sourceMappingURL=api.js.map

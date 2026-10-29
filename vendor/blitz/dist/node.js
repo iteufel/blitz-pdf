@@ -1,10 +1,26 @@
 import { readFile } from "node:fs/promises";
+import { Worker } from "node:worker_threads";
 import { createApi } from "./api.js";
-export const { init, renderPdf, getEngineVersion } = createApi(() => readFile(new URL("../wasm/blitz_pdf_bg.wasm", import.meta.url)), async (source) => {
-    if (source instanceof URL && source.protocol === "file:")
-        return readFile(source);
-    if (typeof source === "string" && source.startsWith("file:"))
-        return readFile(new URL(source));
-    return source;
+export const { init, renderPdf, renderPdfInWorker, createPdfWorkerPool, getWasmModule, getEngineVersion } = createApi({
+    defaultSource: () => readFile(new URL("../wasm/blitz_pdf_bg.wasm", import.meta.url)),
+    prepare: async (source) => {
+        if (source instanceof URL && source.protocol === "file:")
+            return readFile(source);
+        if (typeof source === "string" && source.startsWith("file:"))
+            return readFile(new URL(source));
+        return source;
+    },
+    spawnWorker: events => {
+        const worker = new Worker(new URL("./node-worker.js", import.meta.url));
+        worker.on("message", events.message);
+        worker.on("error", events.error);
+        worker.on("messageerror", events.error);
+        worker.on("exit", code => events.error(new Error(`Render worker exited with code ${code}`)));
+        return {
+            post: (message, transfer) => worker.postMessage(message, transfer),
+            terminate: async () => { await worker.terminate(); },
+            ref: () => { worker.ref(); }, unref: () => { worker.unref(); },
+        };
+    },
 });
 //# sourceMappingURL=node.js.map
